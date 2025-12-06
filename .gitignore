@@ -34,3 +34,7 @@ yarn-error.log*
 
 # OS
 Thumbs.db
+
+# Local Data / Docs
+ollama-openai-compatible-collection.json
+SCOPE_AI_CAREER_COACH_MVP (1).md
