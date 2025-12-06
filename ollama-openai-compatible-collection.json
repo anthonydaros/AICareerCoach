@@ -1,0 +1,600 @@
+{
+	"info": {
+		"_postman_id": "ollama-openai-compatible-v2",
+		"name": "Ollama OpenAI Compatible API",
+		"description": "Coleção otimizada para Open WebUI usando endpoints OpenAI Compatible.\n\n**Modelo Principal:** granite4:7b-a1b-h\n- 22-23 tok/s\n- 1M tokens de contexto\n- Tools/Function Calling otimizado\n- RAG integrado\n\n**Endpoints:**\n- `/api/chat/completions` - Chat + RAG + Tools\n- `/api/embeddings` - Gerar embeddings\n- `/api/v1/files/` - Gerenciar arquivos\n\n**Configuração:**\n1. Importe esta coleção\n2. Atualize a variável `api_key`\n3. Pronto para usar!",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "https://ollama.anthonymax.com",
+			"type": "string"
+		},
+		{
+			"key": "api_key",
+			"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjBkZDcyYjNlLWI3YzItNDJlYS1iMWJkLWQ0NTYzOGMyYjRlNSIsImp0aSI6ImFkZTM1M2NlLTY2ZjYtNGMxZi05MmRmLWYyNTg0YzM5YTYzMyJ9.0nabO1wscgN-uYmCwopLf1DiKbLBUfJZgk_MsITq4ic",
+			"type": "string"
+		},
+		{
+			"key": "model",
+			"value": "granite4:7b-a1b-h",
+			"type": "string"
+		},
+		{
+			"key": "model_embedding",
+			"value": "nomic-embed-text:latest",
+			"type": "string"
+		},
+		{
+			"key": "file_id",
+			"value": "fdc810b5-98a8-4025-807c-721d7b46857c",
+			"type": "string"
+		},
+		{
+			"key": "file_content",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{api_key}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "🔧 Sistema",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": ["{{base_url}}"],
+							"path": ["health"]
+						}
+					}
+				},
+				{
+					"name": "Listar Modelos",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/models",
+							"host": ["{{base_url}}"],
+							"path": ["api", "models"]
+						}
+					}
+				},
+				{
+					"name": "Info do Modelo",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"{{model}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/show",
+							"host": ["{{base_url}}"],
+							"path": ["api", "show"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "💬 Chat Completions",
+			"description": "Endpoint principal OpenAI Compatible. Suporta RAG, tools e streaming.",
+			"item": [
+				{
+					"name": "Chat Simples",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"model\": \"{{model}}\",\n    \"messages\": [\n        {\n            \"role\": \"system\",\n            \"content\": \"Você é um assistente útil e direto. Responda em português.\"\n        },\n        {\n            \"role\": \"user\",\n            \"content\": \"Explique o que é RAG em uma frase.\"\n        }\n    ],\n    \"temperature\": 0.7,\n    \"max_tokens\": 500\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/chat/completions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "chat", "completions"]
+						}
+					}
+				},
+				{
+					"name": "Chat com Parâmetros Avançados",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"model\": \"{{model}}\",\n    \"messages\": [\n        {\n            \"role\": \"system\",\n            \"content\": \"Você é um especialista técnico. Seja preciso e detalhado.\"\n        },\n        {\n            \"role\": \"user\",\n            \"content\": \"Explique a diferença entre Docker e Kubernetes.\"\n        }\n    ],\n    \"temperature\": 0.3,\n    \"max_tokens\": 2048,\n    \"top_p\": 0.9,\n    \"frequency_penalty\": 0.5,\n    \"presence_penalty\": 0.5\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/chat/completions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "chat", "completions"]
+						}
+					}
+				},
+				{
+					"name": "Chat Streaming",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"model\": \"{{model}}\",\n    \"messages\": [\n        {\n            \"role\": \"user\",\n            \"content\": \"Conte uma história curta sobre IA.\"\n        }\n    ],\n    \"stream\": true,\n    \"temperature\": 0.8\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/chat/completions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "chat", "completions"]
+						}
+					},
+					"description": "Resposta em streaming (SSE). Útil para UX em tempo real."
+				},
+				{
+					"name": "Análise Jurídica (Template)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"model\": \"{{model}}\",\n    \"messages\": [\n        {\n            \"role\": \"system\",\n            \"content\": \"Você é um analista jurídico brasileiro especializado em contratos.\\n\\nAo analisar documentos:\\n1. Identifique as partes envolvidas\\n2. Liste as principais obrigações de cada parte\\n3. Destaque cláusulas de risco (multas, rescisão, garantias)\\n4. Aponte possíveis irregularidades ou ambiguidades\\n5. Sugira melhorias quando aplicável\\n\\nFormato de resposta:\\n📋 RESUMO DO DOCUMENTO\\n👥 PARTES ENVOLVIDAS\\n⚖️ CLÁUSULAS CRÍTICAS\\n⚠️ RISCOS IDENTIFICADOS\\n💡 RECOMENDAÇÕES\"\n        },\n        {\n            \"role\": \"user\",\n            \"content\": \"Analise os riscos de uma cláusula de não-concorrência em contrato de trabalho que proíbe o funcionário de trabalhar em qualquer empresa do mesmo setor por 5 anos após a demissão, sem limitação geográfica e sem compensação financeira.\"\n        }\n    ],\n    \"temperature\": 0.2,\n    \"max_tokens\": 2048\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/chat/completions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "chat", "completions"]
+						}
+					}
+				},
+				{
+					"name": "Análise Estratégica (Template)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"model\": \"{{model}}\",\n    \"messages\": [\n        {\n            \"role\": \"system\",\n            \"content\": \"Você é um consultor estratégico sênior. Analise problemas de forma estruturada, considerando múltiplas perspectivas, trade-offs e implicações de longo prazo. Use raciocínio passo a passo.\"\n        },\n        {\n            \"role\": \"user\",\n            \"content\": \"Uma startup de fintech brasileira com 50 funcionários está considerando duas opções para escalar: (A) Levantar uma Série A de R$20 milhões com um fundo de VC americano que exige 30% de equity e 2 assentos no board, ou (B) Fazer um empréstimo de R$10 milhões com o BNDES a juros subsidiados de 8% ao ano, sem diluição. A empresa fatura R$5 milhões/ano com crescimento de 40% ao ano e burn rate de R$800k/mês. Qual caminho você recomenda e por quê? Considere cenários otimistas e pessimistas.\"\n        }\n    ],\n    \"temperature\": 0.3,\n    \"max_tokens\": 2048\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/chat/completions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "chat", "completions"]
+						}
+					}
+				},
+				{
+					"name": "Multi-turn Conversation",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"model\": \"{{model}}\",\n    \"messages\": [\n        {\n            \"role\": \"system\",\n            \"content\": \"Você é um assistente de programação Python.\"\n        },\n        {\n            \"role\": \"user\",\n            \"content\": \"Como faço para ler um arquivo JSON em Python?\"\n        },\n        {\n            \"role\": \"assistant\",\n            \"content\": \"Para ler um arquivo JSON em Python, use a biblioteca `json`:\\n\\n```python\\nimport json\\n\\nwith open('arquivo.json', 'r') as f:\\n    dados = json.load(f)\\n\\nprint(dados)\\n```\"\n        },\n        {\n            \"role\": \"user\",\n            \"content\": \"E se o arquivo for muito grande? Existe uma forma de ler em streaming?\"\n        }\n    ],\n    \"temperature\": 0.3,\n    \"max_tokens\": 1024\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/chat/completions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "chat", "completions"]
+						}
+					},
+					"description": "Exemplo de conversa multi-turno mantendo contexto."
+				}
+			]
+		},
+		{
+			"name": "📁 RAG (Arquivos)",
+			"description": "Retrieval Augmented Generation - Chat com documentos indexados.",
+			"item": [
+				{
+					"name": "Listar Arquivos",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData && jsonData.length > 0) {",
+									"    pm.collectionVariables.set('file_id', jsonData[0].id);",
+									"    console.log('file_id salvo:', jsonData[0].id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/files/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "files", ""]
+						}
+					},
+					"description": "Lista todos os arquivos. O script salva o primeiro file_id automaticamente."
+				},
+				{
+					"name": "Buscar Arquivo por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/files/{{file_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "files", "{{file_id}}"]
+						}
+					},
+					"description": "Retorna detalhes do arquivo incluindo conteúdo extraído e status de embedding."
+				},
+				{
+					"name": "Upload de Arquivo",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData && jsonData.id) {",
+									"    pm.collectionVariables.set('file_id', jsonData.id);",
+									"    console.log('Novo file_id:', jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": ""
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/files/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "files", ""]
+						}
+					},
+					"description": "Upload de PDF, DOCX, TXT, etc. Embedding automático com nomic-embed-text."
+				},
+				{
+					"name": "Deletar Arquivo",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/files/{{file_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "files", "{{file_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Chat com RAG (Arquivo)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"model\": \"{{model}}\",\n    \"messages\": [\n        {\n            \"role\": \"system\",\n            \"content\": \"Você é um especialista em análise de documentos. Baseie suas respostas apenas no conteúdo do documento fornecido.\"\n        },\n        {\n            \"role\": \"user\",\n            \"content\": \"Resuma as principais competências e experiências deste currículo.\"\n        }\n    ],\n    \"files\": [\n        {\n            \"type\": \"file\",\n            \"id\": \"{{file_id}}\"\n        }\n    ],\n    \"temperature\": 0.3,\n    \"max_tokens\": 1024\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/chat/completions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "chat", "completions"]
+						}
+					},
+					"description": "Chat com RAG usando arquivo indexado. O Open WebUI busca chunks relevantes automaticamente."
+				},
+				{
+					"name": "Chat com RAG (Múltiplos Arquivos)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"model\": \"{{model}}\",\n    \"messages\": [\n        {\n            \"role\": \"system\",\n            \"content\": \"Você é um analista comparativo. Compare os documentos fornecidos e destaque semelhanças e diferenças.\"\n        },\n        {\n            \"role\": \"user\",\n            \"content\": \"Compare os dois currículos e identifique qual candidato tem mais experiência em IA.\"\n        }\n    ],\n    \"files\": [\n        {\n            \"type\": \"file\",\n            \"id\": \"FILE_ID_1\"\n        },\n        {\n            \"type\": \"file\",\n            \"id\": \"FILE_ID_2\"\n        }\n    ],\n    \"temperature\": 0.3,\n    \"max_tokens\": 1500\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/chat/completions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "chat", "completions"]
+						}
+					},
+					"description": "RAG com múltiplos arquivos para análise comparativa."
+				},
+				{
+					"name": "Análise de Contrato (RAG)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"model\": \"{{model}}\",\n    \"messages\": [\n        {\n            \"role\": \"system\",\n            \"content\": \"Você é um analista jurídico brasileiro especializado em contratos.\\n\\nAo analisar o documento:\\n1. Identifique as partes envolvidas\\n2. Liste as principais obrigações\\n3. Destaque cláusulas de risco\\n4. Aponte irregularidades\\n5. Sugira melhorias\\n\\nFormato:\\n📋 RESUMO\\n👥 PARTES\\n⚖️ CLÁUSULAS CRÍTICAS\\n⚠️ RISCOS\\n💡 RECOMENDAÇÕES\"\n        },\n        {\n            \"role\": \"user\",\n            \"content\": \"Analise este contrato e identifique os principais riscos jurídicos.\"\n        }\n    ],\n    \"files\": [\n        {\n            \"type\": \"file\",\n            \"id\": \"{{file_id}}\"\n        }\n    ],\n    \"temperature\": 0.2,\n    \"max_tokens\": 2048\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/chat/completions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "chat", "completions"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🔧 Tools (Function Calling)",
+			"description": "Function calling para integrar APIs externas.",
+			"item": [
+				{
+					"name": "Tool Call - Fetch URL",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"model\": \"{{model}}\",\n    \"messages\": [\n        {\n            \"role\": \"system\",\n            \"content\": \"Você é um assistente de pesquisa com acesso à web. Quando precisar de informações atualizadas, use a função fetch_url.\"\n        },\n        {\n            \"role\": \"user\",\n            \"content\": \"Acesse https://www.bcb.gov.br/estatisticas/txjuros e me diga qual é a taxa Selic atual.\"\n        }\n    ],\n    \"tools\": [\n        {\n            \"type\": \"function\",\n            \"function\": {\n                \"name\": \"fetch_url\",\n                \"description\": \"Busca o conteúdo de uma URL na web\",\n                \"parameters\": {\n                    \"type\": \"object\",\n                    \"properties\": {\n                        \"url\": {\n                            \"type\": \"string\",\n                            \"description\": \"A URL para buscar\"\n                        }\n                    },\n                    \"required\": [\"url\"]\n                }\n            }\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/chat/completions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "chat", "completions"]
+						}
+					},
+					"description": "Modelo identifica necessidade de buscar URL e retorna tool_call."
+				},
+				{
+					"name": "Tool Call - Calculadora",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"model\": \"{{model}}\",\n    \"messages\": [\n        {\n            \"role\": \"system\",\n            \"content\": \"Você é um assistente financeiro. Use a calculadora para cálculos precisos.\"\n        },\n        {\n            \"role\": \"user\",\n            \"content\": \"Calcule quanto terei após 5 anos investindo R$10.000 a 12% ao ano com juros compostos.\"\n        }\n    ],\n    \"tools\": [\n        {\n            \"type\": \"function\",\n            \"function\": {\n                \"name\": \"calculate\",\n                \"description\": \"Realiza cálculos matemáticos\",\n                \"parameters\": {\n                    \"type\": \"object\",\n                    \"properties\": {\n                        \"expression\": {\n                            \"type\": \"string\",\n                            \"description\": \"Expressão matemática para calcular\"\n                        }\n                    },\n                    \"required\": [\"expression\"]\n                }\n            }\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/chat/completions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "chat", "completions"]
+						}
+					}
+				},
+				{
+					"name": "Tool Call - CRM/Database",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"model\": \"{{model}}\",\n    \"messages\": [\n        {\n            \"role\": \"system\",\n            \"content\": \"Você é um assistente de vendas com acesso ao CRM.\"\n        },\n        {\n            \"role\": \"user\",\n            \"content\": \"Busque os dados do cliente João Silva e me mostre o histórico de compras.\"\n        }\n    ],\n    \"tools\": [\n        {\n            \"type\": \"function\",\n            \"function\": {\n                \"name\": \"search_customer\",\n                \"description\": \"Busca cliente no CRM por nome ou email\",\n                \"parameters\": {\n                    \"type\": \"object\",\n                    \"properties\": {\n                        \"query\": {\n                            \"type\": \"string\",\n                            \"description\": \"Nome ou email do cliente\"\n                        },\n                        \"include_purchases\": {\n                            \"type\": \"boolean\",\n                            \"description\": \"Incluir histórico de compras\"\n                        }\n                    },\n                    \"required\": [\"query\"]\n                }\n            }\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/chat/completions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "chat", "completions"]
+						}
+					}
+				},
+				{
+					"name": "Tool Response - Completar Ciclo",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"model\": \"{{model}}\",\n    \"messages\": [\n        {\n            \"role\": \"system\",\n            \"content\": \"Você é um assistente de pesquisa. Analise os dados e responda de forma objetiva.\"\n        },\n        {\n            \"role\": \"user\",\n            \"content\": \"Qual é a taxa Selic atual? Analise se é um bom momento para renda fixa.\"\n        },\n        {\n            \"role\": \"assistant\",\n            \"content\": \"\",\n            \"tool_calls\": [\n                {\n                    \"id\": \"call_abc123\",\n                    \"function\": {\n                        \"name\": \"fetch_url\",\n                        \"arguments\": {\n                            \"url\": \"https://www.bcb.gov.br/estatisticas/txjuros\"\n                        }\n                    }\n                }\n            ]\n        },\n        {\n            \"role\": \"tool\",\n            \"tool_call_id\": \"call_abc123\",\n            \"content\": \"Taxa Selic atual: 12,25% ao ano (dezembro 2024). COPOM manteve taxa estável. Inflação IPCA: 4,87%. Meta: 3% com tolerância de 1,5pp.\"\n        }\n    ],\n    \"temperature\": 0.3,\n    \"max_tokens\": 1024\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/chat/completions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "chat", "completions"]
+						}
+					},
+					"description": "Exemplo de como enviar resultado da tool de volta ao modelo para gerar resposta final."
+				},
+				{
+					"name": "Múltiplas Tools",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"model\": \"{{model}}\",\n    \"messages\": [\n        {\n            \"role\": \"system\",\n            \"content\": \"Você é um assistente de atendimento com acesso ao CRM e sistema de tickets.\"\n        },\n        {\n            \"role\": \"user\",\n            \"content\": \"Busque o cliente Maria Santos e crie um ticket de suporte para ela sobre problema no pagamento.\"\n        }\n    ],\n    \"tools\": [\n        {\n            \"type\": \"function\",\n            \"function\": {\n                \"name\": \"search_customer\",\n                \"description\": \"Busca cliente no CRM\",\n                \"parameters\": {\n                    \"type\": \"object\",\n                    \"properties\": {\n                        \"name\": {\n                            \"type\": \"string\",\n                            \"description\": \"Nome do cliente\"\n                        }\n                    },\n                    \"required\": [\"name\"]\n                }\n            }\n        },\n        {\n            \"type\": \"function\",\n            \"function\": {\n                \"name\": \"create_ticket\",\n                \"description\": \"Cria ticket de suporte\",\n                \"parameters\": {\n                    \"type\": \"object\",\n                    \"properties\": {\n                        \"customer_id\": {\n                            \"type\": \"string\",\n                            \"description\": \"ID do cliente\"\n                        },\n                        \"subject\": {\n                            \"type\": \"string\",\n                            \"description\": \"Assunto do ticket\"\n                        },\n                        \"priority\": {\n                            \"type\": \"string\",\n                            \"enum\": [\"low\", \"medium\", \"high\"],\n                            \"description\": \"Prioridade\"\n                        }\n                    },\n                    \"required\": [\"customer_id\", \"subject\"]\n                }\n            }\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/chat/completions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "chat", "completions"]
+						}
+					},
+					"description": "Exemplo com múltiplas tools disponíveis. Modelo escolhe qual usar."
+				}
+			]
+		},
+		{
+			"name": "📊 Embeddings",
+			"item": [
+				{
+					"name": "Gerar Embedding (Texto)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"model\": \"{{model_embedding}}\",\n    \"input\": \"Inteligência artificial aplicada a contratos jurídicos\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/embeddings",
+							"host": ["{{base_url}}"],
+							"path": ["api", "embeddings"]
+						}
+					}
+				},
+				{
+					"name": "Gerar Embeddings (Batch)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"model\": \"{{model_embedding}}\",\n    \"input\": [\n        \"Contrato de trabalho\",\n        \"Cláusula de não-concorrência\",\n        \"Rescisão contratual\",\n        \"Direitos trabalhistas\"\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/embeddings",
+							"host": ["{{base_url}}"],
+							"path": ["api", "embeddings"]
+						}
+					},
+					"description": "Gera embeddings para múltiplos textos de uma vez."
+				}
+			]
+		},
+		{
+			"name": "🔄 Ollama Direct (Fallback)",
+			"description": "Endpoints diretos do Ollama. Use apenas se precisar de controle específico.",
+			"item": [
+				{
+					"name": "Chat Ollama (com think control)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"model\": \"{{model}}\",\n    \"messages\": [\n        {\n            \"role\": \"user\",\n            \"content\": \"Diga olá em uma frase.\"\n        }\n    ],\n    \"stream\": false,\n    \"options\": {\n        \"temperature\": 0.7,\n        \"num_ctx\": 4096\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/ollama/api/chat",
+							"host": ["{{base_url}}"],
+							"path": ["ollama", "api", "chat"]
+						}
+					},
+					"description": "Endpoint direto do Ollama. Suporta think: false para modelos Qwen."
+				},
+				{
+					"name": "Listar Modelos Ollama",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/ollama/api/tags",
+							"host": ["{{base_url}}"],
+							"path": ["ollama", "api", "tags"]
+						}
+					}
+				}
+			]
+		}
+	]
+}

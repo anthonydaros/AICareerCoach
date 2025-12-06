@@ -1,0 +1,83 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 2%;
+    /* #050505 - Deep Bg */
+    --foreground: 0 0% 90%;
+    /* Light Gray Text */
+
+    --card: 0 0% 3%;
+    --card-foreground: 0 0% 90%;
+
+    --popover: 0 0% 3%;
+    --popover-foreground: 0 0% 90%;
+
+    --primary: 183 100% 50%;
+    /* Neon Cyan #00f3ff */
+    --primary-foreground: 0 0% 0%;
+
+    --secondary: 279 100% 54%;
+    /* Neon Pink #bc13fe */
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 60%;
+
+    --accent: 72 100% 50%;
+    /* Neon Yellow #ccff00 */
+    --accent-foreground: 0 0% 0%;
+
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 183 100% 50%;
+    /* Cyan Border for that tech feel */
+    --input: 0 0% 20%;
+    --ring: 183 100% 50%;
+
+    --radius: 0.25rem;
+  }
+
+  .dark {
+    --background: 0 0% 2%;
+    --foreground: 0 0% 90%;
+    --card: 0 0% 3%;
+    --card-foreground: 0 0% 90%;
+    --popover: 0 0% 3%;
+    --popover-foreground: 0 0% 90%;
+    --primary: 183 100% 50%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 279 100% 54%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 72 100% 50%;
+    --accent-foreground: 0 0% 0%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 183 50% 30%;
+    /* Dimmer cyan for general borders */
+    --input: 0 0% 20%;
+    --ring: 183 100% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-mono antialiased;
+  }
+}
+
+/* Utilities for the Dev Look */
+.border-grid {
+  background-size: 40px 40px;
+  background-image: linear-gradient(to right, hsl(var(--border)) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(var(--border)) 1px, transparent 1px);
+}
