@@ -6,6 +6,8 @@ from typing import Any, Optional, List, Dict
 from src.infrastructure.llm import OpenAIGateway
 from src.domain.services.ats_scorer import ATSScorer
 from src.domain.services.job_matcher import JobMatcher
+from src.domain.services.seniority_detector import SeniorityDetector
+from src.domain.services.stability_analyzer import StabilityAnalyzer
 from src.application.use_cases import (
     ParseResumeUseCase,
     ParseJobPostingUseCase,
@@ -43,10 +45,14 @@ class CareerCoachOrchestrator:
         llm_gateway: Optional[OpenAIGateway] = None,
         ats_scorer: Optional[ATSScorer] = None,
         job_matcher: Optional[JobMatcher] = None,
+        seniority_detector: Optional[SeniorityDetector] = None,
+        stability_analyzer: Optional[StabilityAnalyzer] = None,
     ):
         self.llm_gateway = llm_gateway or OpenAIGateway()
         self.ats_scorer = ats_scorer or ATSScorer()
         self.job_matcher = job_matcher or JobMatcher()
+        self.seniority_detector = seniority_detector or SeniorityDetector()
+        self.stability_analyzer = stability_analyzer or StabilityAnalyzer()
 
         # Initialize use cases
         self.parse_resume_uc = ParseResumeUseCase(self.llm_gateway)
@@ -112,11 +118,21 @@ class CareerCoachOrchestrator:
             best_match = job_matches[0]  # Already sorted by percentage
             best_fit = self._create_best_fit(best_match)
 
+        # 6. Detect seniority level
+        seniority = self.seniority_detector.detect(resume)
+        logger.info(f"Detected seniority: {seniority.level.value} ({seniority.confidence}% confidence)")
+
+        # 7. Analyze career stability
+        stability = self.stability_analyzer.analyze(resume)
+        logger.info(f"Stability score: {stability.score}/100, flags: {[f.value for f in stability.flags]}")
+
         # Convert to DTOs
         return {
             "ats_result": self._ats_to_dto(ats_result),
             "job_matches": [self._match_to_dto(m) for m in job_matches],
             "best_fit": best_fit,
+            "seniority": self._seniority_to_dto(seniority),
+            "stability": self._stability_to_dto(stability),
         }
 
     async def generate_interview_prep(
@@ -333,4 +349,44 @@ class CareerCoachOrchestrator:
             "description": t.description,
             "action_items": list(t.action_items),
             "priority": t.priority,
+        }
+
+    def _seniority_to_dto(self, seniority) -> dict[str, Any]:
+        """Convert SeniorityResult to DTO dict."""
+        return {
+            "level": seniority.level.value,
+            "confidence": seniority.confidence,
+            "years_experience": seniority.years_experience,
+            "scores": {
+                "experience": round(seniority.scores.get("experience", 0), 2),
+                "complexity": round(seniority.scores.get("complexity", 0), 2),
+                "autonomy": round(seniority.scores.get("autonomy", 0), 2),
+                "skills": round(seniority.scores.get("skills", 0), 2),
+                "leadership": round(seniority.scores.get("leadership", 0), 2),
+                "impact": round(seniority.scores.get("impact", 0), 2),
+            },
+            "indicators": list(seniority.indicators),
+        }
+
+    def _stability_to_dto(self, stability) -> dict[str, Any]:
+        """Convert StabilityResult to DTO dict."""
+        return {
+            "score": stability.score,
+            "flags": [f.value for f in stability.flags],
+            "indicators": list(stability.indicators),
+            "positive_notes": list(stability.positive_notes),
+            "avg_tenure_months": stability.avg_tenure_months,
+            "total_companies": stability.total_companies,
+            "companies_in_5_years": stability.companies_in_5_years,
+            "consecutive_short_jobs": stability.consecutive_short_jobs,
+            "gaps": [
+                {
+                    "after_company": g.after_company,
+                    "before_company": g.before_company,
+                    "start_year": g.start_year,
+                    "end_year": g.end_year,
+                    "months": g.months,
+                }
+                for g in stability.gaps
+            ],
         }

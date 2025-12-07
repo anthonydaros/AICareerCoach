@@ -27,12 +27,12 @@ class ParseResumeUseCase:
         # Extract structured data using LLM
         extracted = await self.llm_gateway.extract_resume(text)
 
-        # Convert to domain entities
-        skills = self._parse_skills(extracted.get("skills", []))
-        experiences = self._parse_experiences(extracted.get("experiences", []))
-        education = self._parse_education(extracted.get("education", []))
-        certifications = extracted.get("certifications", [])
-        total_years = extracted.get("total_experience_years", 0.0)
+        # Convert to domain entities (use 'or []' to handle None values from LLM)
+        skills = self._parse_skills(extracted.get("skills") or [])
+        experiences = self._parse_experiences(extracted.get("experiences") or [])
+        education = self._parse_education(extracted.get("education") or [])
+        certifications = extracted.get("certifications") or []
+        total_years = extracted.get("total_experience_years") or 0.0
 
         return Resume(
             id=str(uuid.uuid4()),
@@ -52,11 +52,12 @@ class ParseResumeUseCase:
             if not isinstance(s, dict):
                 continue
 
-            name = s.get("name", "")
+            name = s.get("name") or ""
             if not name:
                 continue
 
-            level_str = s.get("level", "intermediate").lower()
+            # Handle None values from LLM - use 'or' pattern
+            level_str = (s.get("level") or "intermediate").lower()
             try:
                 level = SkillLevel(level_str)
             except ValueError:
@@ -64,7 +65,7 @@ class ParseResumeUseCase:
 
             skills.append(Skill(
                 name=name,
-                normalized_name=s.get("normalized_name", name),
+                normalized_name=s.get("normalized_name") or name,
                 level=level,
                 years_experience=s.get("years_experience"),
             ))
@@ -78,17 +79,18 @@ class ParseResumeUseCase:
             if not isinstance(e, dict):
                 continue
 
-            title = e.get("title", "")
-            company = e.get("company", "")
+            # Handle None values from LLM - use 'or' pattern
+            title = e.get("title") or ""
+            company = e.get("company") or ""
             if not title or not company:
                 continue
 
             experiences.append(Experience(
                 title=title,
                 company=company,
-                duration_months=int(e.get("duration_months", 0)),
-                description=e.get("description", ""),
-                skills_used=e.get("skills_used", []),
+                duration_months=int(e.get("duration_months") or 0),
+                description=e.get("description") or "",
+                skills_used=e.get("skills_used") or [],
             ))
 
         return experiences
@@ -100,9 +102,10 @@ class ParseResumeUseCase:
             if not isinstance(ed, dict):
                 continue
 
-            degree = ed.get("degree", "")
-            field = ed.get("field", "")
-            institution = ed.get("institution", "")
+            # Handle None values from LLM - use 'or' pattern
+            degree = ed.get("degree") or ""
+            field = ed.get("field") or ""
+            institution = ed.get("institution") or ""
             if not degree or not institution:
                 continue
 

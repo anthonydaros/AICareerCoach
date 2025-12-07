@@ -71,7 +71,7 @@ export default function Dashboard() {
 
       <Header onLoadDemo={handleLoadDemo} />
 
-      <main id="main-content" className="flex-1 flex flex-col lg:flex-row relative z-10 p-4 lg:p-8 gap-8 max-w-[1600px] mx-auto w-full" tabIndex={-1}>
+      <main id="main-content" className="flex-1 flex flex-col lg:flex-row relative z-10 p-3 sm:p-4 lg:p-8 gap-6 lg:gap-8 max-w-[1600px] mx-auto w-full" tabIndex={-1}>
 
         {/* LEFT PANEL: MISSIONS */}
         <section className="flex-1 flex flex-col gap-6 lg:gap-8" aria-label="Input section">
@@ -141,11 +141,10 @@ export default function Dashboard() {
               disabled={!canInitiate}
               aria-label={isLoading ? (status === "uploading" ? "Uploading resume" : "Analyzing data") : "Start analysis"}
               aria-busy={isLoading}
-              className={`relative w-full overflow-hidden bg-background border-2 ${
-                canInitiate
+              className={`relative w-full overflow-hidden bg-background border-2 ${canInitiate
                   ? 'border-neon-cyan text-neon-cyan hover:bg-neon-cyan hover:text-black'
                   : 'border-gray-600 text-gray-500 cursor-not-allowed'
-              } transition-all duration-300 p-8 clip-path-polygon group focus:outline-none focus:ring-2 focus:ring-neon-cyan focus:ring-offset-2 focus:ring-offset-background`}
+                } transition-all duration-300 p-8 clip-path-polygon group focus:outline-none focus:ring-2 focus:ring-neon-cyan focus:ring-offset-2 focus:ring-offset-background`}
             >
               {/* Tech markings */}
               <div className="absolute top-0 right-0 p-2 text-[10px] font-mono opacity-50" aria-hidden="true">EXE_001</div>

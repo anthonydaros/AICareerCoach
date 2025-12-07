@@ -37,7 +37,9 @@ Return a JSON object with this exact structure:
             "company": "company name",
             "duration_months": estimated months as integer,
             "description": "brief role description",
-            "skills_used": ["skill1", "skill2"]
+            "skills_used": ["skill1", "skill2"],
+            "start_year": year as integer (e.g., 2021),
+            "end_year": year as integer or null if current job
         }}
     ],
     "education": [
@@ -56,4 +58,7 @@ Important:
 - Extract ALL technical and soft skills mentioned
 - Estimate total_experience_years from work history
 - Include certifications even if listed informally
-- Be accurate with company names and job titles"""
+- Be accurate with company names and job titles
+- Extract start_year and end_year from date ranges (e.g., "2021-2024" -> start_year: 2021, end_year: 2024)
+- For current jobs ("Present", "Current", "Atual"), set end_year to null
+- If only year range is shown (e.g., "2021-2023"), extract those years directly"""

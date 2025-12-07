@@ -72,11 +72,64 @@ class BestFitResponse(BaseModel):
     recommendation: str
 
 
+class SeniorityScoresResponse(BaseModel):
+    """Seniority score breakdown."""
+    experience: float = Field(..., ge=0, le=1)
+    complexity: float = Field(..., ge=0, le=1)
+    autonomy: float = Field(..., ge=0, le=1)
+    skills: float = Field(..., ge=0, le=1)
+    leadership: float = Field(..., ge=0, le=1)
+    impact: float = Field(..., ge=0, le=1)
+
+
+class SeniorityResponse(BaseModel):
+    """Detected seniority level response."""
+    level: str = Field(..., description="Seniority level: junior, mid, or senior")
+    confidence: float = Field(..., ge=0, le=100, description="Confidence percentage")
+    years_experience: float = Field(..., ge=0, description="Total years of experience")
+    scores: SeniorityScoresResponse = Field(..., description="Breakdown of scoring criteria")
+    indicators: list[str] = Field(default_factory=list, description="Reasons for classification")
+
+
+class GapResponse(BaseModel):
+    """Employment gap information."""
+    after_company: str = Field(..., description="Company before the gap")
+    before_company: str = Field(..., description="Company after the gap")
+    start_year: int = Field(..., description="Gap start year")
+    end_year: int = Field(..., description="Gap end year")
+    months: int = Field(..., description="Gap duration in months")
+
+
+class TimelineEntryResponse(BaseModel):
+    """Career timeline entry."""
+    company: str = Field(..., description="Company name")
+    title: str = Field(..., description="Job title")
+    start_year: int = Field(..., description="Start year")
+    end_year: Optional[int] = Field(default=None, description="End year (null if current)")
+    duration_months: int = Field(..., description="Duration in months")
+    seniority_level: int = Field(..., ge=1, le=8, description="Seniority level (1-8)")
+
+
+class StabilityResponse(BaseModel):
+    """Career stability analysis response."""
+    score: int = Field(..., ge=0, le=100, description="Stability score (0-100)")
+    flags: list[str] = Field(default_factory=list, description="Detected stability flags")
+    indicators: list[str] = Field(default_factory=list, description="Reasons for score deductions")
+    positive_notes: list[str] = Field(default_factory=list, description="Positive career patterns")
+    avg_tenure_months: float = Field(..., ge=0, description="Average tenure per company in months")
+    total_companies: int = Field(..., ge=0, description="Total number of companies")
+    companies_in_5_years: int = Field(..., ge=0, description="Companies in last 5 years")
+    consecutive_short_jobs: int = Field(..., ge=0, description="Consecutive jobs under 12 months")
+    gaps: list[GapResponse] = Field(default_factory=list, description="Employment gaps > 6 months")
+
+
 class AnalyzeResponse(BaseModel):
     """Full analysis response."""
     ats_result: ATSResultResponse
     job_matches: list[JobMatchResponse]
     best_fit: Optional[BestFitResponse] = None
+    seniority: Optional[SeniorityResponse] = None
+    stability: Optional[StabilityResponse] = None
 
 
 class InterviewQuestionResponse(BaseModel):

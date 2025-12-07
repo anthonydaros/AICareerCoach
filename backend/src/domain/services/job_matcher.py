@@ -3,6 +3,7 @@
 from src.domain.entities.resume import Resume
 from src.domain.entities.job_posting import JobPosting
 from src.domain.entities.analysis_result import JobMatch, MatchLevel, SkillGap
+from src.domain.services.skill_relationships import expand_skills, normalize_skill
 
 
 class JobMatcher:
@@ -52,7 +53,7 @@ class JobMatcher:
 
     def _match_single(self, resume: Resume, job: JobPosting) -> JobMatch:
         """
-        Calculate match for a single job.
+        Calculate match for a single job with intelligent skill inference.
 
         Args:
             resume: Parsed resume entity
@@ -65,16 +66,25 @@ class JobMatcher:
         required = job.get_required_skills()
         preferred = job.get_nice_to_have_skills()
 
-        # Calculate skill matches
-        matched_required = resume_skills & required
-        matched_preferred = resume_skills & preferred
-        missing_required = required - resume_skills
-        missing_preferred = preferred - resume_skills
+        # Normalize all skills for consistent matching
+        normalized_resume = {normalize_skill(s) for s in resume_skills}
+        normalized_required = {normalize_skill(s) for s in required}
+        normalized_preferred = {normalize_skill(s) for s in preferred}
+
+        # Expand resume skills with inferred knowledge
+        # e.g., "Python" -> includes "pytorch", "tensorflow", etc.
+        expanded_resume_skills = expand_skills(normalized_resume)
+
+        # Calculate skill matches using expanded skills
+        matched_required = expanded_resume_skills & normalized_required
+        matched_preferred = expanded_resume_skills & normalized_preferred
+        missing_required = normalized_required - expanded_resume_skills
+        missing_preferred = normalized_preferred - expanded_resume_skills
 
         # Calculate match percentage
         # Weight: 70% required skills, 20% preferred skills, 10% experience
-        required_match = len(matched_required) / len(required) if required else 1.0
-        preferred_match = len(matched_preferred) / len(preferred) if preferred else 1.0
+        required_match = len(matched_required) / len(normalized_required) if normalized_required else 1.0
+        preferred_match = len(matched_preferred) / len(normalized_preferred) if normalized_preferred else 1.0
 
         # Experience factor
         if job.min_experience_years > 0:

@@ -115,13 +115,13 @@ class OpenAIGateway:
         prompt = RESUME_EXTRACTION_PROMPT.format(resume_text=text)
         result = await self._chat_json(RESUME_EXTRACTION_SYSTEM, prompt)
 
-        # Ensure required fields exist with defaults
+        # Ensure required fields exist with defaults (use 'or' to handle None values)
         return {
-            "skills": result.get("skills", []),
-            "experiences": result.get("experiences", []),
-            "education": result.get("education", []),
-            "certifications": result.get("certifications", []),
-            "total_experience_years": result.get("total_experience_years", 0.0),
+            "skills": result.get("skills") or [],
+            "experiences": result.get("experiences") or [],
+            "education": result.get("education") or [],
+            "certifications": result.get("certifications") or [],
+            "total_experience_years": result.get("total_experience_years") or 0.0,
         }
 
     async def extract_job_posting(self, text: str) -> dict[str, Any]:
@@ -137,15 +137,15 @@ class OpenAIGateway:
         prompt = JOB_EXTRACTION_PROMPT.format(job_text=text)
         result = await self._chat_json(JOB_EXTRACTION_SYSTEM, prompt)
 
-        # Ensure required fields exist with defaults
+        # Ensure required fields exist with defaults (use 'or' to handle None values)
         return {
             "title": result.get("title"),
             "company": result.get("company"),
-            "requirements": result.get("requirements", []),
-            "preferred_skills": result.get("preferred_skills", []),
-            "keywords": result.get("keywords", []),
-            "min_experience_years": result.get("min_experience_years", 0),
-            "education_requirements": result.get("education_requirements", []),
+            "requirements": result.get("requirements") or [],
+            "preferred_skills": result.get("preferred_skills") or [],
+            "keywords": result.get("keywords") or [],
+            "min_experience_years": result.get("min_experience_years") or 0,
+            "education_requirements": result.get("education_requirements") or [],
         }
 
     async def generate_interview_questions(

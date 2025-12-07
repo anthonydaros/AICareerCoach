@@ -26,10 +26,10 @@ class ParseJobPostingUseCase:
         # Extract structured data using LLM
         extracted = await self.llm_gateway.extract_job_posting(text)
 
-        # Convert to domain entities
-        requirements = self._parse_requirements(extracted.get("requirements", []))
-        preferred_skills = extracted.get("preferred_skills", [])
-        keywords = extracted.get("keywords", [])
+        # Convert to domain entities (use 'or []' to handle None values from LLM)
+        requirements = self._parse_requirements(extracted.get("requirements") or [])
+        preferred_skills = extracted.get("preferred_skills") or []
+        keywords = extracted.get("keywords") or []
 
         return JobPosting(
             id=job_id,
@@ -39,8 +39,8 @@ class ParseJobPostingUseCase:
             requirements=requirements,
             preferred_skills=preferred_skills,
             keywords=keywords,
-            min_experience_years=int(extracted.get("min_experience_years", 0)),
-            education_requirements=extracted.get("education_requirements", []),
+            min_experience_years=int(extracted.get("min_experience_years") or 0),
+            education_requirements=extracted.get("education_requirements") or [],
         )
 
     def _parse_requirements(self, req_data: list[dict[str, Any]]) -> list[JobRequirement]:

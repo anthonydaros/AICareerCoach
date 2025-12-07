@@ -33,6 +33,8 @@ class Experience(BaseModel):
     duration_months: int = Field(..., ge=0, description="Duration in months")
     description: str = Field(default="", description="Role description")
     skills_used: list[str] = Field(default_factory=list, description="Skills used in this role")
+    start_year: Optional[int] = Field(default=None, description="Start year (e.g., 2021)")
+    end_year: Optional[int] = Field(default=None, description="End year (None = current job)")
 
     class Config:
         frozen = True

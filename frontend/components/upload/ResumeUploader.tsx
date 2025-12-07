@@ -68,7 +68,7 @@ export function ResumeUploader({
                 aria-describedby="resume-upload-instructions"
                 aria-busy={isUploading}
                 className={cn(
-                    "relative h-full min-h-[120px] border-2 border-dashed transition-all duration-300 rounded-lg flex flex-col items-center justify-center p-6 cursor-pointer group overflow-hidden",
+                    "relative h-full min-h-[100px] sm:min-h-[120px] border-2 border-dashed transition-all duration-300 rounded-lg flex flex-col items-center justify-center p-4 sm:p-6 cursor-pointer group overflow-hidden",
                     "focus:outline-none focus:ring-2 focus:ring-neon-pink focus:ring-offset-2 focus:ring-offset-background",
                     isDragActive
                         ? "border-neon-pink bg-neon-pink/10 shadow-[inset_0_0_30px_rgba(188,19,254,0.3)]"
@@ -101,29 +101,29 @@ export function ResumeUploader({
                 )}
 
                 {!file ? (
-                    <div className="text-center space-y-3 pointer-events-none z-10">
-                        <div className="w-16 h-16 rounded-full bg-black/50 border border-neon-pink/30 flex items-center justify-center mx-auto mb-2 group-hover:scale-110 group-hover:border-neon-pink transition-all shadow-[0_0_15px_rgba(188,19,254,0.1)]">
-                            <Upload className="h-8 w-8 text-neon-pink opacity-70 group-hover:opacity-100" />
+                    <div className="text-center space-y-3 pointer-events-none z-10 w-full">
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-black/50 border border-neon-pink/30 flex items-center justify-center mx-auto mb-2 group-hover:scale-110 group-hover:border-neon-pink transition-all shadow-[0_0_15px_rgba(188,19,254,0.1)]">
+                            <Upload className="h-6 w-6 sm:h-8 sm:w-8 text-neon-pink opacity-70 group-hover:opacity-100" />
                         </div>
                         <div>
-                            <p className="text-neon-pink font-bold font-display tracking-widest uppercase text-sm">DROP DATA CORE</p>
+                            <p className="text-neon-pink font-bold font-display tracking-widest uppercase text-xs sm:text-sm whitespace-nowrap">DROP DATA CORE</p>
                             <p className="text-[10px] text-muted-foreground font-mono mt-1">OR CLICK TO UPLOAD</p>
                         </div>
                     </div>
                 ) : (
                     <div className="w-full space-y-4 relative z-10">
-                        <div className="flex items-center justify-between bg-black/40 p-3 rounded border border-neon-pink/30">
-                            <div className="flex items-center gap-3">
-                                <FileText className="h-6 w-6 text-neon-pink" />
-                                <div className="text-left">
-                                    <p className="text-sm font-bold text-white truncate max-w-[200px]">{file.name}</p>
-                                    <p className="text-[10px] text-neon-pink font-mono uppercase">{(file.size / 1024).toFixed(1)} KB // ENCRYPTED</p>
+                        <div className="flex items-center justify-between bg-black/40 p-2 sm:p-3 rounded border border-neon-pink/30">
+                            <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
+                                <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-neon-pink flex-shrink-0" />
+                                <div className="text-left overflow-hidden">
+                                    <p className="text-xs sm:text-sm font-bold text-white truncate max-w-[150px] sm:max-w-[200px]">{file.name}</p>
+                                    <p className="text-[9px] sm:text-[10px] text-neon-pink font-mono uppercase">{(file.size / 1024).toFixed(1)} KB // ENCRYPTED</p>
                                 </div>
                             </div>
                             <button
                                 onClick={clearFile}
                                 aria-label="Remove uploaded resume"
-                                className="p-1.5 hover:bg-red-500/20 rounded-full text-muted-foreground hover:text-red-500 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
+                                className="p-1.5 hover:bg-red-500/20 rounded-full text-muted-foreground hover:text-red-500 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 flex-shrink-0"
                             >
                                 <X className="h-4 w-4" aria-hidden="true" />
                             </button>

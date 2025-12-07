@@ -6,6 +6,7 @@ from typing import Optional
 from src.domain.entities.resume import Resume
 from src.domain.entities.job_posting import JobPosting
 from src.domain.entities.analysis_result import ATSResult
+from src.domain.services.skill_relationships import expand_skills, normalize_skill
 
 
 @dataclass
@@ -110,18 +111,27 @@ class ATSScorer:
         required_skills: set[str],
         all_job_skills: set[str],
     ) -> tuple[float, set[str], set[str]]:
-        """Calculate skill match score."""
-        # Match against required skills primarily
-        matched_required = resume_skills & required_skills
-        missing_required = required_skills - resume_skills
+        """Calculate skill match score with intelligent skill inference."""
+        # Normalize all skills for consistent matching
+        normalized_resume = {normalize_skill(s) for s in resume_skills}
+        normalized_required = {normalize_skill(s) for s in required_skills}
+        normalized_all_job = {normalize_skill(s) for s in all_job_skills}
+
+        # Expand resume skills with inferred knowledge
+        # e.g., "Python" -> includes "pytorch", "tensorflow", etc.
+        expanded_resume_skills = expand_skills(normalized_resume)
+
+        # Match against required skills with expanded set
+        matched_required = expanded_resume_skills & normalized_required
+        missing_required = normalized_required - expanded_resume_skills
 
         # Also check all skills for additional matches
-        matched_all = resume_skills & all_job_skills
+        matched_all = expanded_resume_skills & normalized_all_job
 
-        if required_skills:
-            skill_ratio = len(matched_required) / len(required_skills)
-        elif all_job_skills:
-            skill_ratio = len(matched_all) / len(all_job_skills)
+        if normalized_required:
+            skill_ratio = len(matched_required) / len(normalized_required)
+        elif normalized_all_job:
+            skill_ratio = len(matched_all) / len(normalized_all_job)
         else:
             skill_ratio = 1.0  # No requirements = full score
 

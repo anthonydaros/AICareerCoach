@@ -28,5 +28,8 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_MODEL=${OPENAI_MODEL}
       - OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL}
+      - OPENAI_TEMPERATURE=${OPENAI_TEMPERATURE}
+      - OPENAI_MAX_TOKENS=${OPENAI_MAX_TOKENS}
+      - OPENAI_TIMEOUT=${OPENAI_TIMEOUT}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
     command: uvicorn src.presentation.api.main:app --host 0.0.0.0 --port 8000 --reload
