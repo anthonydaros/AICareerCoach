@@ -1,80 +1,91 @@
-# ================================
-# AI Career Coach - Production
-# Docker Compose for Coolify/VPS
-# ================================
+# ==============================================
+# Production Docker Compose for Coolify Deployment
+# Ports are managed by Coolify reverse proxy
+# ==============================================
 
 services:
-  # ===================
-  # Backend API (FastAPI)
-  # ===================
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.prod
-    # No host ports - Traefik handles external routing via coolify network
-    expose:
-      - "8000"
-    environment:
-      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://ollama.anthonymax.com/v1}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - OPENAI_MODEL=${OPENAI_MODEL:-granite4:7b-a1b-h}
-      - OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL:-nomic-embed-text:latest}
-      - OPENAI_TEMPERATURE=${OPENAI_TEMPERATURE:-0.3}
-      - OPENAI_MAX_TOKENS=${OPENAI_MAX_TOKENS:-4096}
-      - OPENAI_TIMEOUT=${OPENAI_TIMEOUT:-120}
-      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3000}
-      - API_DEBUG=false
-      - LOG_LEVEL=INFO
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      start_period: 10s
-      retries: 3
-    restart: unless-stopped
-    labels:
-      # Coolify/Traefik labels
-      - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`${DOMAIN:-localhost}`) && PathPrefix(`/api`)"
-      - "traefik.http.routers.backend.entrypoints=websecure"
-      - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
-      - "traefik.http.services.backend.loadbalancer.server.port=8000"
-      - "traefik.http.middlewares.backend-stripprefix.stripprefix.prefixes=/api"
-      - "traefik.http.routers.backend.middlewares=backend-stripprefix"
-
-  # ===================
-  # Frontend (Next.js)
-  # ===================
+  # ============================================
+  # Frontend - Next.js Application
+  # ============================================
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
       args:
-        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
-    # No host ports - Traefik handles external routing via coolify network
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://backend:8000}
     expose:
       - "3000"
     environment:
       - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://backend:8000}
     depends_on:
       backend:
         condition: service_healthy
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
       interval: 30s
       timeout: 10s
-      start_period: 15s
       retries: 3
-    restart: unless-stopped
-    labels:
-      # Coolify/Traefik labels
-      - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`${DOMAIN:-localhost}`)"
-      - "traefik.http.routers.frontend.entrypoints=websecure"
-      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
-      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-networks:
-  default:
-    external: true
-    name: coolify
+  # ============================================
+  # Backend - FastAPI Application
+  # ============================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    expose:
+      - "8000"
+    environment:
+      - ENVIRONMENT=production
+      - API_HOST=${API_HOST:-0.0.0.0}
+      - API_PORT=${API_PORT:-8000}
+      - API_DEBUG=false
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-https://career.anthonymax.com}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://ollama.anthonymax.com/api}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-careerai}
+      - OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL:-nomic-embed-text:latest}
+      - OPENAI_TEMPERATURE=${OPENAI_TEMPERATURE:-0.3}
+      - OPENAI_MAX_TOKENS=${OPENAI_MAX_TOKENS:-4096}
+      - OPENAI_TIMEOUT=${OPENAI_TIMEOUT:-120}
+      - MAX_UPLOAD_SIZE_MB=${MAX_UPLOAD_SIZE_MB:-10}
+      - UPLOAD_TEMP_DIR=${UPLOAD_TEMP_DIR:-/tmp/career-coach}
+      - ALLOWED_EXTENSIONS=${ALLOWED_EXTENSIONS:-.pdf,.docx,.txt}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_FORMAT=${LOG_FORMAT:-json}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 1G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
