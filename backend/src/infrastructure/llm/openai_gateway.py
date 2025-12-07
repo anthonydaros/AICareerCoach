@@ -47,6 +47,7 @@ class OpenAIGateway:
             default_headers=default_headers if default_headers else None,
         )
         self.model = settings.openai_model
+        self.fallback_model = settings.openai_fallback_model
         self.temperature = settings.openai_temperature
         self.max_tokens = settings.openai_max_tokens
 
@@ -68,6 +69,58 @@ class OpenAIGateway:
         )
         return response.choices[0].message.content
 
+    async def _try_chat_json_with_model(
+        self,
+        model: str,
+        messages: list[dict[str, str]],
+        temperature: float,
+        max_tokens: int,
+    ) -> Union[dict[str, Any], list[Any], None]:
+        """
+        Try to get JSON response from a specific model.
+
+        Returns:
+            Parsed JSON, or None if failed/empty
+        """
+        try:
+            response = await self.client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+
+            content = response.choices[0].message.content or ""
+
+            # Debug log the raw response
+            logger.debug(f"[{model}] Raw response (first 500 chars): {content[:500]}")
+
+            # Empty response check
+            if not content.strip():
+                logger.warning(f"[{model}] Returned empty response")
+                return None
+
+            # Try multiple JSON extraction strategies
+            json_content = self._extract_json(content)
+
+            try:
+                result = json.loads(json_content)
+                # Check if result is meaningfully non-empty
+                if result and (isinstance(result, list) or any(result.values())):
+                    logger.info(f"[{model}] Successfully parsed JSON response")
+                    return result
+                else:
+                    logger.warning(f"[{model}] Returned empty JSON structure")
+                    return None
+            except json.JSONDecodeError as e:
+                logger.error(f"[{model}] Failed to parse JSON: {e}")
+                logger.warning(f"[{model}] Raw response that failed: {content[:500]}")
+                return None
+
+        except Exception as e:
+            logger.error(f"[{model}] API call failed: {e}")
+            return None
+
     async def _chat_json(
         self,
         system_prompt: str,
@@ -76,7 +129,7 @@ class OpenAIGateway:
         max_tokens: Optional[int] = None,
     ) -> Union[dict[str, Any], list[Any]]:
         """
-        Send a chat request expecting JSON response.
+        Send a chat request expecting JSON response with automatic fallback.
 
         Args:
             system_prompt: System message for context
@@ -91,31 +144,22 @@ class OpenAIGateway:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ]
+        tokens = max_tokens or self.max_tokens
 
-        # Use temperature=0.0 for JSON extraction (more deterministic)
-        # Higher temperature for creative generation
-        response = await self.client.chat.completions.create(
-            model=self.model,
-            messages=messages,
-            temperature=temperature,
-            max_tokens=max_tokens or self.max_tokens,
+        # Try primary model first
+        result = await self._try_chat_json_with_model(
+            self.model, messages, temperature, tokens
         )
 
-        content = response.choices[0].message.content or ""
+        # If primary failed/empty and fallback is configured, try fallback
+        if result is None and self.fallback_model and self.fallback_model != self.model:
+            logger.warning(f"Primary model ({self.model}) failed, trying fallback ({self.fallback_model})")
+            result = await self._try_chat_json_with_model(
+                self.fallback_model, messages, temperature, tokens
+            )
 
-        # Debug log the raw response
-        logger.debug(f"Raw LLM response (first 500 chars): {content[:500]}")
-
-        # Try multiple JSON extraction strategies
-        json_content = self._extract_json(content)
-
-        try:
-            return json.loads(json_content)
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse JSON response: {e}")
-            logger.warning(f"Raw response that failed parsing: {content[:500]}")
-            # Return empty structure on parse failure
-            return {}
+        # Return result or empty structure
+        return result if result is not None else {}
 
     def _extract_json(self, content: str) -> str:
         """
