@@ -48,6 +48,9 @@ export function ResultsProvider({ children }: { children: ReactNode }) {
         result,
         resumeText,
         jobs,
+        // Extract interview_prep and coaching_tips if present in the response
+        interviewPrep: result.interview_prep || prev.interviewPrep,
+        coachingTips: result.coaching_tips || prev.coachingTips,
       }));
     },
     []

@@ -130,6 +130,53 @@ class CareerCoachOrchestrator:
         stability = self.stability_analyzer.analyze(resume)
         logger.info(f"Stability score: {stability.score}/100, flags: {[f.value for f in stability.flags]}")
 
+        # 8. Generate interview prep for best-fit job
+        interview_prep_data = None
+        if best_fit and jobs:
+            best_job = jobs[0]  # Already sorted by match percentage
+            best_match = job_matches[0] if job_matches else None
+            skill_gaps = list(best_match.missing_skills)[:5] if best_match else []
+
+            try:
+                interview_questions = await self.llm_gateway.generate_interview_questions(
+                    resume_summary=self._get_resume_summary(resume),
+                    job_summary=self._get_job_summary(best_job),
+                    skill_gaps=skill_gaps,
+                    seniority_level=seniority.level.value if seniority else "mid",
+                )
+                interview_prep_data = {
+                    "job_title": best_job.get_display_title(),
+                    "questions": interview_questions,
+                }
+                logger.info(f"Generated {len(interview_questions)} interview questions")
+            except Exception as e:
+                logger.warning(f"Failed to generate interview prep: {e}")
+                interview_prep_data = {"job_title": None, "questions": []}
+
+        # 9. Generate coaching tips
+        coaching_tips_data = None
+        try:
+            match_results_for_coaching = [
+                {
+                    "job_title": m.job_title,
+                    "match_percentage": m.match_percentage,
+                    "missing_skills": list(m.missing_skills),
+                }
+                for m in job_matches
+            ]
+            coaching_tips = await self.llm_gateway.generate_coaching_tips(
+                resume_summary=self._get_resume_summary(resume),
+                jobs_summary="\n".join(j.get_display_title() for j in jobs) if jobs else "",
+                match_results=match_results_for_coaching,
+            )
+            coaching_tips_data = {
+                "tips": coaching_tips,
+            }
+            logger.info(f"Generated {len(coaching_tips)} coaching tips")
+        except Exception as e:
+            logger.warning(f"Failed to generate coaching tips: {e}")
+            coaching_tips_data = {"tips": []}
+
         # Convert to DTOs
         return {
             "ats_result": self._ats_to_dto(ats_result),
@@ -137,6 +184,8 @@ class CareerCoachOrchestrator:
             "best_fit": best_fit,
             "seniority": self._seniority_to_dto(seniority),
             "stability": self._stability_to_dto(stability),
+            "interview_prep": interview_prep_data,
+            "coaching_tips": coaching_tips_data,
         }
 
     async def generate_interview_prep(

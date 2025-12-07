@@ -91,6 +91,8 @@ export interface AnalyzeResponse {
   ats_result: ATSResult;
   job_matches: JobMatch[];
   best_fit: BestFit | null;
+  interview_prep?: InterviewPrepResponse | null;
+  coaching_tips?: CoachingTipsResponse | null;
 }
 
 export interface InterviewQuestion {

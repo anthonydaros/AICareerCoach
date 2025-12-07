@@ -204,15 +204,6 @@ class StabilityResponse(BaseModel):
     gaps: list[GapResponse] = Field(default_factory=list, description="Employment gaps > 6 months")
 
 
-class AnalyzeResponse(BaseModel):
-    """Full analysis response."""
-    ats_result: ATSResultResponse
-    job_matches: list[JobMatchResponse]
-    best_fit: Optional[BestFitResponse] = None
-    seniority: Optional[SeniorityResponse] = None
-    stability: Optional[StabilityResponse] = None
-
-
 # ============= Interview Prep Enhanced Schemas =============
 
 class StarMethodResponse(BaseModel):
@@ -307,6 +298,30 @@ class CoachingTipsResponse(BaseModel):
         default_factory=list,
         description="Alternative career paths if current match is low"
     )
+
+
+# ============= Main Analysis Response =============
+
+class SimpleInterviewPrepResponse(BaseModel):
+    """Simplified interview prep for main analysis response."""
+    job_title: Optional[str] = None
+    questions: list[InterviewQuestionResponse] = Field(default_factory=list)
+
+
+class SimpleCoachingTipsResponse(BaseModel):
+    """Simplified coaching tips for main analysis response."""
+    tips: list[CoachingTipResponse] = Field(default_factory=list)
+
+
+class AnalyzeResponse(BaseModel):
+    """Full analysis response."""
+    ats_result: ATSResultResponse
+    job_matches: list[JobMatchResponse]
+    best_fit: Optional[BestFitResponse] = None
+    seniority: Optional[SeniorityResponse] = None
+    stability: Optional[StabilityResponse] = None
+    interview_prep: Optional[SimpleInterviewPrepResponse] = None
+    coaching_tips: Optional[SimpleCoachingTipsResponse] = None
 
 
 class ErrorResponse(BaseModel):
