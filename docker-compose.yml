@@ -32,6 +32,7 @@ services:
       - OPENAI_MAX_TOKENS=${OPENAI_MAX_TOKENS}
       - OPENAI_TIMEOUT=${OPENAI_TIMEOUT}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_API_KEY_FALLBACK=${GEMINI_API_KEY_FALLBACK}
       - GEMINI_MODEL=${GEMINI_MODEL}
       - ALLOWED_ORIGINS=http://localhost:3001,http://localhost:3000,${ALLOWED_ORIGINS}
     command: uvicorn src.presentation.api.main:app --host 0.0.0.0 --port 8000 --reload

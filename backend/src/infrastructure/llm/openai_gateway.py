@@ -51,7 +51,10 @@ class OpenAIGateway:
         self.max_tokens = settings.openai_max_tokens
 
         # Google Gemini fallback (direct API, bypasses OpenRouter rate limits)
-        self.gemini_api_key = settings.gemini_api_key
+        # Support multiple API keys for rate limit rotation
+        self.gemini_api_keys = [
+            k for k in [settings.gemini_api_key, settings.gemini_api_key_fallback] if k
+        ]
         self.gemini_model = settings.gemini_model
 
     async def chat(self, messages: list[dict[str, str]]) -> str:
@@ -72,6 +75,118 @@ class OpenAIGateway:
         )
         return response.choices[0].message.content
 
+    async def _call_gemini_with_key(
+        self,
+        api_key: str,
+        messages: list[dict[str, str]],
+        temperature: float,
+        max_tokens: int,
+    ) -> Union[dict[str, Any], list[Any], None]:
+        """
+        Call Gemini API with a specific API key.
+
+        Args:
+            api_key: The Gemini API key to use
+            messages: List of message dicts with 'role' and 'content'
+            temperature: Temperature for generation
+            max_tokens: Max output tokens
+
+        Returns:
+            Parsed JSON response, or None if failed
+
+        Raises:
+            Exception: Re-raises 429 errors for rate limit handling
+        """
+        import google.generativeai as genai
+        import re
+
+        genai.configure(api_key=api_key)
+
+        # Convert OpenAI messages to Gemini format
+        system_msg = next((m["content"] for m in messages if m["role"] == "system"), "")
+        user_msg = next((m["content"] for m in messages if m["role"] == "user"), "")
+
+        # Disable safety filters - our content (resumes/job postings) is safe
+        safety_settings = {
+            "HARM_CATEGORY_HARASSMENT": "BLOCK_NONE",
+            "HARM_CATEGORY_HATE_SPEECH": "BLOCK_NONE",
+            "HARM_CATEGORY_SEXUALLY_EXPLICIT": "BLOCK_NONE",
+            "HARM_CATEGORY_DANGEROUS_CONTENT": "BLOCK_NONE",
+        }
+
+        # Create model with system instruction and safety settings
+        model = genai.GenerativeModel(
+            self.gemini_model,
+            system_instruction=system_msg,
+            safety_settings=safety_settings,
+        )
+
+        response = await model.generate_content_async(
+            user_msg,
+            generation_config=genai.types.GenerationConfig(
+                temperature=temperature,
+                max_output_tokens=max_tokens,
+                response_mime_type="application/json",
+            ),
+        )
+
+        # Check if response was blocked before accessing .text
+        if not response.candidates:
+            logger.warning("[Gemini] No candidates in response (possibly blocked)")
+            return None
+
+        candidate = response.candidates[0]
+        # finish_reason: 1=STOP (normal), 2=MAX_TOKENS, 3=SAFETY, 4=RECITATION, 5=OTHER
+        if hasattr(candidate, 'finish_reason') and candidate.finish_reason not in (1, 'STOP', None):
+            logger.warning(f"[Gemini] Response issue, finish_reason={candidate.finish_reason}")
+            # Still try to get content if available
+            if not candidate.content or not candidate.content.parts:
+                return None
+
+        # Safely extract content
+        if not candidate.content or not candidate.content.parts:
+            logger.warning("[Gemini] Response has no content parts")
+            return None
+
+        content = candidate.content.parts[0].text or ""
+
+        if not content.strip():
+            logger.warning("[Gemini] Returned empty response")
+            return None
+
+        logger.debug(f"[Gemini] Raw response (first 500 chars): {content[:500]}")
+
+        # Extract JSON content
+        json_content = self._extract_json(content)
+
+        # Fix common JSON issues from LLMs
+        # Remove trailing commas before ] or }
+        json_content = re.sub(r',(\s*[\]}])', r'\1', json_content)
+        # Fix newlines inside string values (replace with \n)
+        json_content = re.sub(r'(?<!\\)\n(?=[^"]*"[^"]*(?:"[^"]*"[^"]*)*$)', r'\\n', json_content)
+        # Replace single quotes with double quotes for keys (careful approach)
+        json_content = re.sub(r"(?<=[{,\s])'([^']+)'(?=\s*:)", r'"\1"', json_content)
+
+        try:
+            result = json.loads(json_content)
+        except json.JSONDecodeError as e:
+            # Try one more fix: remove any control characters
+            try:
+                cleaned = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', json_content)
+                result = json.loads(cleaned)
+                logger.info("[Gemini] Successfully parsed JSON after cleanup")
+            except json.JSONDecodeError:
+                logger.warning(f"[Gemini] JSON parse error: {e}")
+                logger.debug(f"[Gemini] Raw content that failed: {content[:2000]}")
+                return None
+
+        if result and (isinstance(result, list) or any(result.values())):
+            logger.info("[Gemini] Successfully parsed JSON response")
+            return result
+        else:
+            logger.warning("[Gemini] Returned empty JSON structure")
+            return None
+
     async def _try_gemini_json_response(
         self,
         messages: list[dict[str, str]],
@@ -79,7 +194,7 @@ class OpenAIGateway:
         max_tokens: int,
     ) -> Union[dict[str, Any], list[Any], None]:
         """
-        Fallback using Google Gemini API directly (bypasses OpenRouter rate limits).
+        Fallback using Google Gemini API with automatic key rotation on rate limit.
 
         Args:
             messages: List of message dicts with 'role' and 'content'
@@ -89,109 +204,42 @@ class OpenAIGateway:
         Returns:
             Parsed JSON response, or None if failed
         """
-        if not self.gemini_api_key:
-            logger.warning("Gemini API key not configured, skipping Gemini fallback")
+        if not self.gemini_api_keys:
+            logger.warning("No Gemini API keys configured, skipping Gemini fallback")
             return None
 
         try:
-            import google.generativeai as genai
-            import re
-
-            genai.configure(api_key=self.gemini_api_key)
-
-            # Convert OpenAI messages to Gemini format
-            system_msg = next((m["content"] for m in messages if m["role"] == "system"), "")
-            user_msg = next((m["content"] for m in messages if m["role"] == "user"), "")
-
-            # Disable safety filters - our content (resumes/job postings) is safe
-            safety_settings = {
-                "HARM_CATEGORY_HARASSMENT": "BLOCK_NONE",
-                "HARM_CATEGORY_HATE_SPEECH": "BLOCK_NONE",
-                "HARM_CATEGORY_SEXUALLY_EXPLICIT": "BLOCK_NONE",
-                "HARM_CATEGORY_DANGEROUS_CONTENT": "BLOCK_NONE",
-            }
-
-            # Create model with system instruction and safety settings
-            model = genai.GenerativeModel(
-                self.gemini_model,
-                system_instruction=system_msg,
-                safety_settings=safety_settings,
-            )
-
-            logger.info(f"[Gemini] Calling {self.gemini_model} directly")
-
-            response = await model.generate_content_async(
-                user_msg,
-                generation_config=genai.types.GenerationConfig(
-                    temperature=temperature,
-                    max_output_tokens=max_tokens,
-                    response_mime_type="application/json",
-                ),
-            )
-
-            # Check if response was blocked before accessing .text
-            if not response.candidates:
-                logger.warning("[Gemini] No candidates in response (possibly blocked)")
-                return None
-
-            candidate = response.candidates[0]
-            # finish_reason: 1=STOP (normal), 2=MAX_TOKENS, 3=SAFETY, 4=RECITATION, 5=OTHER
-            if hasattr(candidate, 'finish_reason') and candidate.finish_reason not in (1, 'STOP', None):
-                logger.warning(f"[Gemini] Response issue, finish_reason={candidate.finish_reason}")
-                # Still try to get content if available
-                if not candidate.content or not candidate.content.parts:
-                    return None
-
-            # Safely extract content
-            if not candidate.content or not candidate.content.parts:
-                logger.warning("[Gemini] Response has no content parts")
-                return None
-
-            content = candidate.content.parts[0].text or ""
-
-            if not content.strip():
-                logger.warning("[Gemini] Returned empty response")
-                return None
-
-            logger.debug(f"[Gemini] Raw response (first 500 chars): {content[:500]}")
-
-            # Extract JSON content
-            json_content = self._extract_json(content)
-
-            # Fix common JSON issues from LLMs
-            # Remove trailing commas before ] or }
-            json_content = re.sub(r',(\s*[\]}])', r'\1', json_content)
-            # Fix newlines inside string values (replace with \n)
-            json_content = re.sub(r'(?<!\\)\n(?=[^"]*"[^"]*(?:"[^"]*"[^"]*)*$)', r'\\n', json_content)
-            # Replace single quotes with double quotes for keys (careful approach)
-            json_content = re.sub(r"(?<=[{,\s])'([^']+)'(?=\s*:)", r'"\1"', json_content)
-
-            try:
-                result = json.loads(json_content)
-            except json.JSONDecodeError as e:
-                # Try one more fix: remove any control characters
-                try:
-                    cleaned = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', json_content)
-                    result = json.loads(cleaned)
-                    logger.info("[Gemini] Successfully parsed JSON after cleanup")
-                except json.JSONDecodeError:
-                    logger.warning(f"[Gemini] JSON parse error: {e}")
-                    logger.debug(f"[Gemini] Raw content that failed: {content[:2000]}")
-                    return None
-
-            if result and (isinstance(result, list) or any(result.values())):
-                logger.info("[Gemini] Successfully parsed JSON response")
-                return result
-            else:
-                logger.warning("[Gemini] Returned empty JSON structure")
-                return None
-
+            import google.generativeai as genai  # noqa: F401 - verify import
         except ImportError:
             logger.error("[Gemini] google-generativeai package not installed")
             return None
-        except Exception as e:
-            logger.error(f"[Gemini] API call failed: {e}")
-            return None
+
+        # Try each API key in sequence
+        for idx, api_key in enumerate(self.gemini_api_keys):
+            key_label = "primary" if idx == 0 else f"fallback-{idx}"
+            key_preview = f"{api_key[:10]}...{api_key[-4:]}"
+
+            try:
+                logger.info(f"[Gemini] Calling {self.gemini_model} with {key_label} key ({key_preview})")
+                result = await self._call_gemini_with_key(api_key, messages, temperature, max_tokens)
+
+                if result is not None:
+                    logger.info(f"[Gemini] Success with {key_label} key")
+                    return result
+
+            except Exception as e:
+                error_str = str(e)
+                # Check for rate limit error (429)
+                if "429" in error_str:
+                    if idx < len(self.gemini_api_keys) - 1:
+                        logger.warning(f"[Gemini] Rate limit (429) on {key_label} key, trying next key...")
+                        continue
+                    else:
+                        logger.error(f"[Gemini] Rate limit (429) on all keys: {e}")
+                else:
+                    logger.error(f"[Gemini] {key_label} key failed: {e}")
+
+        return None
 
     async def _try_chat_json_with_model(
         self,
@@ -276,7 +324,7 @@ class OpenAIGateway:
         )
 
         # If primary failed/empty, try Google Gemini directly (more reliable than OpenRouter fallback)
-        if result is None and self.gemini_api_key:
+        if result is None and self.gemini_api_keys:
             logger.warning(f"Primary model ({self.model}) failed, trying Google Gemini directly")
             result = await self._try_gemini_json_response(messages, temperature, tokens)
 
