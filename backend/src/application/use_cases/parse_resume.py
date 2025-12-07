@@ -44,6 +44,11 @@ class ParseResumeUseCase:
         certifications = extracted.get("certifications") or []
         total_years = extracted.get("total_experience_years") or 0.0
 
+        # Validate total_years is non-negative (LLM can return invalid values)
+        if isinstance(total_years, (int, float)) and total_years < 0:
+            logger.warning(f"LLM returned negative experience years ({total_years}), resetting to 0")
+            total_years = 0.0
+
         # P4.1: Fallback to regex extraction if LLM failed to extract skills
         if not skills:
             logger.warning("LLM failed to extract skills, using regex fallback")
@@ -113,6 +118,9 @@ class ParseResumeUseCase:
         """
         P4.1: Fallback regex extraction for total experience years.
         """
+        from datetime import datetime
+        current_year = datetime.now().year
+
         # Pattern 1: "X+ years" or "X years"
         years_pattern = r'(\d+)\+?\s*(?:years?|anos?)\s+(?:of\s+)?(?:experience|experiência)'
         matches = re.findall(years_pattern, text, re.IGNORECASE)
@@ -126,13 +134,25 @@ class ParseResumeUseCase:
             re.IGNORECASE
         )
         if date_ranges:
-            # Calculate years from date ranges
             total_months = 0
             for start, end in date_ranges:
                 start_year = int(start)
-                end_year = 2024 if not end else int(end)  # Present = current year
+                # Handle empty string when "Present" is matched
+                end_year = current_year if not end else int(end)
+
+                # Validate years are reasonable (1950 to current year + 1)
+                if not (1950 <= start_year <= current_year + 1):
+                    continue
+                if not (1950 <= end_year <= current_year + 1):
+                    continue
+                # Ensure start <= end
+                if start_year > end_year:
+                    continue
+
                 total_months += (end_year - start_year) * 12
-            return round(total_months / 12, 1)
+
+            if total_months > 0:
+                return round(total_months / 12, 1)
 
         return 0.0
 
