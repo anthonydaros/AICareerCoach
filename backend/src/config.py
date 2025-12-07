@@ -26,7 +26,7 @@ class Settings(BaseSettings):
 
     # Google Gemini Fallback (direct API - bypasses OpenRouter rate limits)
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-2.5-flash"
+    gemini_model: str = "gemini-2.5-flash-lite"
 
     # API Configuration
     api_host: str = "0.0.0.0"
