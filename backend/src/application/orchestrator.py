@@ -1,5 +1,6 @@
 """Career Coach Orchestrator - Coordinates the full analysis workflow."""
 
+import asyncio
 import logging
 from typing import Any, Optional, List, Dict
 
@@ -83,12 +84,14 @@ class CareerCoachOrchestrator:
         resume = await self.parse_resume_uc.execute(resume_text)
         logger.info(f"Parsed resume: {len(resume.skills)} skills, {resume.total_experience_years} years exp")
 
-        # 2. Parse all job postings
-        jobs = []
-        for jp in job_postings:
+        # 2. Parse all job postings in parallel (PERFORMANCE: avoids N+1 sequential calls)
+        async def parse_job(jp: dict) -> Any:
             job = await self.parse_job_uc.execute(jp["id"], jp["text"])
-            jobs.append(job)
             logger.info(f"Parsed job: {job.title} with {len(job.requirements)} requirements")
+            return job
+
+        jobs = await asyncio.gather(*[parse_job(jp) for jp in job_postings])
+        jobs = list(jobs)  # Convert tuple to list
 
         # 3. Calculate ATS score (use first job as reference)
         if jobs:

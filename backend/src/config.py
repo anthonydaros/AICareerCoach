@@ -11,9 +11,10 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     # OpenAI SDK Configuration (pointing to Open WebUI / Ollama)
-    openai_base_url: str = "https://ollama.anthonymax.com/api"
-    openai_api_key: str = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjBkZDcyYjNlLWI3YzItNDJlYS1iMWJkLWQ0NTYzOGMyYjRlNSIsImp0aSI6ImFkZTM1M2NlLTY2ZjYtNGMxZi05MmRmLWYyNTg0YzM5YTYzMyJ9.0nabO1wscgN-uYmCwopLf1DiKbLBUfJZgk_MsITq4ic"
-    openai_model: str = "granite4:7b-a1b-h"
+    # SECURITY: These must be set via environment variables - no hardcoded credentials
+    openai_base_url: str = "http://localhost:11434/v1"  # Default to local Ollama
+    openai_api_key: str = "ollama"  # Safe default for local Ollama (no auth)
+    openai_model: str = "granite4:7b"
     openai_embedding_model: str = "nomic-embed-text:latest"
     openai_temperature: float = 0.3
     openai_max_tokens: int = 4096

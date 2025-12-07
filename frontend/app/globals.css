@@ -39,6 +39,14 @@
     --ring: 183 100% 50%;
 
     --radius: 0.25rem;
+
+    /* WCAG AA Accessible Text Colors (4.5:1 contrast ratio on dark bg) */
+    --primary-text: 183 100% 70%;
+    /* Lighter cyan for body text #66f7ff */
+    --secondary-text: 279 100% 75%;
+    /* Lighter pink for body text #d666ff */
+    --accent-text: 72 100% 70%;
+    /* Lighter yellow for body text #e0ff66 */
   }
 
   .dark {
@@ -62,6 +70,11 @@
     /* Dimmer cyan for general borders */
     --input: 0 0% 20%;
     --ring: 183 100% 50%;
+
+    /* WCAG AA Accessible Text Colors (4.5:1 contrast ratio on dark bg) */
+    --primary-text: 183 100% 70%;
+    --secondary-text: 279 100% 75%;
+    --accent-text: 72 100% 70%;
   }
 }
 
