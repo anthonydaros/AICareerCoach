@@ -159,6 +159,20 @@ class OpenAIGateway:
         # Extract JSON content
         json_content = self._extract_json(content)
 
+        # Fix truncated JSON structures (from MAX_TOKENS cutoff)
+        open_braces = json_content.count('{') - json_content.count('}')
+        open_brackets = json_content.count('[') - json_content.count(']')
+        if open_braces > 0 or open_brackets > 0:
+            logger.warning(f"[Gemini] Attempting to fix truncated JSON (unclosed: {open_braces} braces, {open_brackets} brackets)")
+            # Remove incomplete trailing content (cut at last complete element)
+            # Find last complete value marker (comma, colon after value, or opening bracket)
+            last_comma = json_content.rfind(',')
+            if last_comma > 0:
+                # Keep content up to and including the last comma, then close structures
+                json_content = json_content[:last_comma]
+            # Close arrays first (innermost), then objects
+            json_content += ']' * open_brackets + '}' * open_braces
+
         # Fix common JSON issues from LLMs
         # Remove trailing commas before ] or }
         json_content = re.sub(r',(\s*[\]}])', r'\1', json_content)
@@ -192,6 +206,7 @@ class OpenAIGateway:
         messages: list[dict[str, str]],
         temperature: float,
         max_tokens: int,
+        retry_count: int = 0,
     ) -> Union[dict[str, Any], list[Any], None]:
         """
         Fallback using Google Gemini API with automatic key rotation on rate limit.
@@ -200,6 +215,7 @@ class OpenAIGateway:
             messages: List of message dicts with 'role' and 'content'
             temperature: Temperature for generation
             max_tokens: Max output tokens
+            retry_count: Number of retries attempted (for token limit increase)
 
         Returns:
             Parsed JSON response, or None if failed
@@ -238,6 +254,15 @@ class OpenAIGateway:
                         logger.error(f"[Gemini] Rate limit (429) on all keys: {e}")
                 else:
                     logger.error(f"[Gemini] {key_label} key failed: {e}")
+
+        # If all keys failed and we haven't retried yet, try again with more tokens
+        # This helps recover from MAX_TOKENS truncation (finish_reason=2)
+        if retry_count < 1:
+            increased_tokens = int(max_tokens * 1.5)
+            logger.info(f"[Gemini] Retrying with increased tokens ({max_tokens} -> {increased_tokens})")
+            return await self._try_gemini_json_response(
+                messages, temperature, increased_tokens, retry_count + 1
+            )
 
         return None
 
@@ -392,7 +417,7 @@ class OpenAIGateway:
         """
         prompt = RESUME_EXTRACTION_PROMPT.format(resume_text=text)
         # Use temperature=0.0 for deterministic JSON extraction
-        result = await self._chat_json(RESUME_EXTRACTION_SYSTEM, prompt, temperature=0.0, max_tokens=2000)
+        result = await self._chat_json(RESUME_EXTRACTION_SYSTEM, prompt, temperature=0.0, max_tokens=3000)
 
         # Ensure required fields exist with defaults (use 'or' to handle None values)
         return {
@@ -422,7 +447,7 @@ class OpenAIGateway:
         """
         prompt = JOB_EXTRACTION_PROMPT.format(job_text=text)
         # Use temperature=0.0 for deterministic JSON extraction
-        result = await self._chat_json(JOB_EXTRACTION_SYSTEM, prompt, temperature=0.0, max_tokens=1500)
+        result = await self._chat_json(JOB_EXTRACTION_SYSTEM, prompt, temperature=0.0, max_tokens=2500)
 
         # Ensure required fields exist with defaults (use 'or' to handle None values)
         return {
@@ -478,7 +503,7 @@ class OpenAIGateway:
         )
 
         # Use slightly higher temperature for creative question generation
-        result = await self._chat_json(INTERVIEW_GENERATION_SYSTEM, prompt, temperature=0.3, max_tokens=2500)
+        result = await self._chat_json(INTERVIEW_GENERATION_SYSTEM, prompt, temperature=0.3, max_tokens=3500)
 
         # Handle both list response and dict with questions key
         if isinstance(result, list):
