@@ -103,10 +103,19 @@ class OpenAIGateway:
             system_msg = next((m["content"] for m in messages if m["role"] == "system"), "")
             user_msg = next((m["content"] for m in messages if m["role"] == "user"), "")
 
-            # Create model with system instruction for better context
+            # Disable safety filters - our content (resumes/job postings) is safe
+            safety_settings = {
+                "HARM_CATEGORY_HARASSMENT": "BLOCK_NONE",
+                "HARM_CATEGORY_HATE_SPEECH": "BLOCK_NONE",
+                "HARM_CATEGORY_SEXUALLY_EXPLICIT": "BLOCK_NONE",
+                "HARM_CATEGORY_DANGEROUS_CONTENT": "BLOCK_NONE",
+            }
+
+            # Create model with system instruction and safety settings
             model = genai.GenerativeModel(
                 self.gemini_model,
                 system_instruction=system_msg,
+                safety_settings=safety_settings,
             )
 
             logger.info(f"[Gemini] Calling {self.gemini_model} directly")
@@ -120,7 +129,25 @@ class OpenAIGateway:
                 ),
             )
 
-            content = response.text or ""
+            # Check if response was blocked before accessing .text
+            if not response.candidates:
+                logger.warning("[Gemini] No candidates in response (possibly blocked)")
+                return None
+
+            candidate = response.candidates[0]
+            # finish_reason: 1=STOP (normal), 2=MAX_TOKENS, 3=SAFETY, 4=RECITATION, 5=OTHER
+            if hasattr(candidate, 'finish_reason') and candidate.finish_reason not in (1, 'STOP', None):
+                logger.warning(f"[Gemini] Response issue, finish_reason={candidate.finish_reason}")
+                # Still try to get content if available
+                if not candidate.content or not candidate.content.parts:
+                    return None
+
+            # Safely extract content
+            if not candidate.content or not candidate.content.parts:
+                logger.warning("[Gemini] Response has no content parts")
+                return None
+
+            content = candidate.content.parts[0].text or ""
 
             if not content.strip():
                 logger.warning("[Gemini] Returned empty response")
