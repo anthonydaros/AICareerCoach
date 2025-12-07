@@ -22,6 +22,60 @@ class GenerateInterviewPrepUseCase:
         "Bring copies of your resume and a notebook for taking notes",
     ]
 
+    # Seniority-specific preparation tips (P2.3)
+    SENIORITY_TIPS = {
+        "intern": [
+            "Focus on demonstrating eagerness to learn and adaptability",
+            "Prepare questions about mentorship and learning opportunities",
+            "Have examples of academic projects or personal learning initiatives",
+        ],
+        "entry": [
+            "Prepare to discuss relevant coursework and side projects",
+            "Show enthusiasm for growth and willingness to learn quickly",
+            "Research the tech stack and prepare basic understanding questions",
+        ],
+        "junior": [
+            "Prepare examples showing rapid learning and problem-solving",
+            "Be ready to discuss how you handle feedback and iterate",
+            "Show awareness of best practices even if still learning them",
+        ],
+        "mid": [
+            "Prepare concrete examples of independent problem-solving",
+            "Be ready to discuss trade-offs in your technical decisions",
+            "Show how you've mentored others or improved team processes",
+        ],
+        "senior": [
+            "Prepare examples of technical leadership and architectural decisions",
+            "Be ready to discuss how you've influenced team direction",
+            "Show system-level thinking and cross-team collaboration examples",
+        ],
+        "lead": [
+            "Prepare examples of team building and talent development",
+            "Discuss how you balance hands-on work with leadership duties",
+            "Show how you've handled technical disagreements and built consensus",
+        ],
+        "staff": [
+            "Prepare examples of organization-wide technical impact",
+            "Discuss your approach to solving ambiguous, cross-cutting problems",
+            "Show how you've influenced technical strategy beyond your team",
+        ],
+        "principal": [
+            "Prepare to discuss your technical vision and industry perspective",
+            "Show examples of company-wide initiatives you've driven",
+            "Discuss how you balance innovation with practical constraints",
+        ],
+        "director": [
+            "Prepare examples of building and scaling engineering organizations",
+            "Discuss your approach to aligning technical and business strategy",
+            "Show how you've developed leaders and created succession plans",
+        ],
+        "executive": [
+            "Prepare to discuss organizational transformation examples",
+            "Show how you've built culture and defined engineering values",
+            "Discuss board-level communication and stakeholder management",
+        ],
+    }
+
     # Questions to ask interviewer by category
     QUESTIONS_TO_ASK = {
         "role": [
@@ -56,6 +110,7 @@ class GenerateInterviewPrepUseCase:
         skill_gaps: list[str],
         matched_skills: Optional[list[str]] = None,
         job_title: Optional[str] = None,
+        seniority_level: Optional[str] = None,
     ) -> InterviewPrep:
         """
         Generate comprehensive interview preparation.
@@ -66,15 +121,20 @@ class GenerateInterviewPrepUseCase:
             skill_gaps: List of skills the candidate is missing
             matched_skills: Optional list of matched skills
             job_title: Optional job title for context
+            seniority_level: Optional seniority level for difficulty adjustment (P2.3)
 
         Returns:
             InterviewPrep with questions, STAR guidance, and tips
         """
-        # Generate questions using LLM
+        # Detect seniority from job title if not provided
+        detected_seniority = seniority_level or self._detect_seniority(job_title)
+
+        # Generate questions using LLM with seniority context
         questions_data = await self.llm_gateway.generate_interview_questions(
             resume_summary=resume_summary,
             job_summary=job_summary,
             skill_gaps=skill_gaps,
+            seniority_level=detected_seniority,
         )
 
         # Parse and enhance questions
@@ -83,11 +143,11 @@ class GenerateInterviewPrepUseCase:
         # Organize questions by category
         questions_by_category = self._organize_by_category(questions)
 
-        # Select preparation tips
-        preparation_tips = self._get_preparation_tips(skill_gaps, job_title)
+        # Select preparation tips with seniority context
+        preparation_tips = self._get_preparation_tips(skill_gaps, job_title, detected_seniority)
 
         # Select questions to ask interviewer
-        questions_to_ask = self._get_questions_to_ask(job_title)
+        questions_to_ask = self._get_questions_to_ask(job_title, detected_seniority)
 
         return InterviewPrep(
             questions=questions,
@@ -244,13 +304,55 @@ class GenerateInterviewPrepUseCase:
 
         return dict(by_category)
 
+    def _detect_seniority(self, job_title: Optional[str]) -> str:
+        """Detect seniority level from job title."""
+        if not job_title:
+            return "mid"
+
+        title_lower = job_title.lower()
+
+        # Executive level
+        if any(word in title_lower for word in ["cto", "ceo", "cio", "vp ", "vice president", "chief"]):
+            return "executive"
+        # Director level
+        if "director" in title_lower:
+            return "director"
+        # Principal level
+        if "principal" in title_lower or "distinguished" in title_lower:
+            return "principal"
+        # Staff level
+        if "staff" in title_lower:
+            return "staff"
+        # Lead level
+        if "lead" in title_lower or "tech lead" in title_lower or "team lead" in title_lower:
+            return "lead"
+        # Senior level
+        if "senior" in title_lower or "sr." in title_lower or "sr " in title_lower:
+            return "senior"
+        # Junior level
+        if "junior" in title_lower or "jr." in title_lower or "jr " in title_lower:
+            return "junior"
+        # Entry level
+        if "entry" in title_lower or "associate" in title_lower or "trainee" in title_lower:
+            return "entry"
+        # Intern
+        if "intern" in title_lower or "estágio" in title_lower or "estagiário" in title_lower:
+            return "intern"
+
+        return "mid"
+
     def _get_preparation_tips(
         self,
         skill_gaps: list[str],
         job_title: Optional[str] = None,
+        seniority_level: str = "mid",
     ) -> list[str]:
-        """Get relevant preparation tips."""
+        """Get relevant preparation tips with seniority context."""
         tips = list(self.PREPARATION_TIPS)
+
+        # Add seniority-specific tips (P2.3)
+        seniority_tips = self.SENIORITY_TIPS.get(seniority_level.lower(), [])
+        tips.extend(seniority_tips)
 
         # Add tips based on skill gaps
         if skill_gaps:
@@ -262,38 +364,62 @@ class GenerateInterviewPrepUseCase:
         # Add role-specific tips
         if job_title:
             title_lower = job_title.lower()
-            if "senior" in title_lower or "lead" in title_lower:
-                tips.append(
-                    "Prepare examples of technical leadership, mentoring, and architectural decisions"
-                )
             if "manager" in title_lower:
                 tips.append(
                     "Prepare examples of team building, performance management, and conflict resolution"
                 )
+            if "architect" in title_lower:
+                tips.append(
+                    "Prepare to discuss system design decisions, trade-offs, and scalability considerations"
+                )
 
-        return tips[:10]  # Return top 10 tips
+        return tips[:12]  # Return top 12 tips (expanded for seniority context)
 
     def _get_questions_to_ask(
         self,
         job_title: Optional[str] = None,
+        seniority_level: str = "mid",
     ) -> list[str]:
-        """Get questions candidate should ask the interviewer."""
+        """Get questions candidate should ask the interviewer with seniority context."""
         questions = []
 
         # Add one from each category
         for category, q_list in self.QUESTIONS_TO_ASK.items():
             questions.append(q_list[0])
 
+        # Add seniority-specific questions (P2.3)
+        seniority_lower = seniority_level.lower()
+        if seniority_lower in ["intern", "entry", "junior"]:
+            questions.extend([
+                "What does the onboarding process look like for new team members?",
+                "How does the team support professional development for early-career engineers?",
+            ])
+        elif seniority_lower in ["senior", "lead"]:
+            questions.extend([
+                "What's the balance between hands-on coding and technical leadership in this role?",
+                "What are the biggest technical challenges the team is facing right now?",
+            ])
+        elif seniority_lower in ["staff", "principal"]:
+            questions.extend([
+                "How does engineering influence product and business strategy here?",
+                "What's the process for driving technical initiatives across teams?",
+            ])
+        elif seniority_lower in ["director", "executive"]:
+            questions.extend([
+                "How do you measure engineering team health and productivity?",
+                "What's the company's approach to technical investment vs. feature delivery?",
+            ])
+
         # Add role-specific questions
         if job_title:
             title_lower = job_title.lower()
-            if "senior" in title_lower or "lead" in title_lower:
-                questions.append(
-                    "What's the balance between hands-on coding and technical leadership in this role?"
-                )
             if "remote" in title_lower:
                 questions.append(
                     "How does the team maintain collaboration and communication remotely?"
                 )
+            if "architect" in title_lower:
+                questions.append(
+                    "How are architectural decisions made and documented?"
+                )
 
-        return questions[:6]  # Return top 6 questions
+        return questions[:8]  # Return top 8 questions (expanded for seniority)

@@ -1,5 +1,6 @@
 """Job posting entity and related value objects."""
 
+from enum import Enum
 from typing import Optional
 from pydantic import BaseModel, Field
 
@@ -13,6 +14,27 @@ class JobRequirement(BaseModel):
 
     class Config:
         frozen = True
+
+
+class SeniorityLevel(str, Enum):
+    """Job seniority level."""
+    INTERN = "intern"
+    JUNIOR = "junior"
+    MID = "mid"
+    SENIOR = "senior"
+    LEAD = "lead"
+    STAFF = "staff"
+    PRINCIPAL = "principal"
+    DIRECTOR = "director"
+    EXECUTIVE = "executive"
+
+
+class RemotePolicy(str, Enum):
+    """Remote work policy."""
+    ONSITE = "onsite"
+    HYBRID = "hybrid"
+    REMOTE = "remote"
+    UNKNOWN = "unknown"
 
 
 class JobPosting(BaseModel):
@@ -29,6 +51,14 @@ class JobPosting(BaseModel):
     keywords: list[str] = Field(default_factory=list, description="Keywords found in posting")
     min_experience_years: int = Field(default=0, ge=0, description="Minimum years of experience")
     education_requirements: list[str] = Field(default_factory=list, description="Required education")
+
+    # Enhanced fields (P1.3)
+    seniority_level: Optional[SeniorityLevel] = Field(default=None, description="Detected seniority level")
+    remote_policy: RemotePolicy = Field(default=RemotePolicy.UNKNOWN, description="Remote work policy")
+    salary_min: Optional[int] = Field(default=None, description="Minimum salary (annual)")
+    salary_max: Optional[int] = Field(default=None, description="Maximum salary (annual)")
+    salary_currency: str = Field(default="USD", description="Salary currency code")
+    location: Optional[str] = Field(default=None, description="Job location")
 
     def get_required_skills(self) -> set[str]:
         """Get required skill names as a set (lowercase)."""

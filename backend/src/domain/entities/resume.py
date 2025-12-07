@@ -1,8 +1,21 @@
 """Resume entity and related value objects."""
 
+import re
 from enum import Enum
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+
+# Email validation pattern
+EMAIL_PATTERN = re.compile(
+    r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+)
+
+# LinkedIn URL pattern
+LINKEDIN_PATTERN = re.compile(
+    r'^(https?://)?(www\.)?linkedin\.com/in/[\w-]+/?$',
+    re.IGNORECASE
+)
 
 
 class SkillLevel(str, Enum):
@@ -36,6 +49,21 @@ class Experience(BaseModel):
     start_year: Optional[int] = Field(default=None, description="Start year (e.g., 2021)")
     end_year: Optional[int] = Field(default=None, description="End year (None = current job)")
 
+    @field_validator('start_year', 'end_year', mode='before')
+    @classmethod
+    def validate_year(cls, v: Optional[int]) -> Optional[int]:
+        """Validate year is reasonable (1950-2030)."""
+        if v is None:
+            return None
+        if isinstance(v, str):
+            try:
+                v = int(v)
+            except ValueError:
+                return None
+        if 1950 <= v <= 2030:
+            return v
+        return None
+
     class Config:
         frozen = True
 
@@ -58,6 +86,13 @@ class Resume(BaseModel):
     id: str = Field(..., description="Unique identifier for the resume")
     raw_content: str = Field(..., description="Original text content of the resume")
 
+    # Contact information (P1.1)
+    name: Optional[str] = Field(default=None, description="Candidate's full name")
+    email: Optional[str] = Field(default=None, description="Email address")
+    phone: Optional[str] = Field(default=None, description="Phone number")
+    linkedin_url: Optional[str] = Field(default=None, description="LinkedIn profile URL")
+    location: Optional[str] = Field(default=None, description="City, State/Country")
+
     # Extracted data
     skills: list[Skill] = Field(default_factory=list, description="Extracted skills")
     experiences: list[Experience] = Field(default_factory=list, description="Work experience entries")
@@ -67,6 +102,57 @@ class Resume(BaseModel):
 
     # Metadata
     filename: Optional[str] = Field(default=None, description="Original filename")
+
+    @field_validator('email', mode='before')
+    @classmethod
+    def validate_email(cls, v: Optional[str]) -> Optional[str]:
+        """Validate and clean email address."""
+        if v is None or v == "":
+            return None
+        v = v.strip().lower()
+        if EMAIL_PATTERN.match(v):
+            return v
+        # Try to extract email from text (fallback)
+        match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', v)
+        if match:
+            return match.group(0).lower()
+        return None  # Invalid email, set to None instead of raising
+
+    @field_validator('linkedin_url', mode='before')
+    @classmethod
+    def validate_linkedin(cls, v: Optional[str]) -> Optional[str]:
+        """Validate and normalize LinkedIn URL."""
+        if v is None or v == "":
+            return None
+        v = v.strip()
+        # Normalize URL
+        if not v.startswith(('http://', 'https://')):
+            if 'linkedin.com' in v.lower():
+                v = 'https://' + v.lstrip('/')
+        if LINKEDIN_PATTERN.match(v):
+            return v
+        # Try to extract LinkedIn from text
+        match = re.search(r'(?:https?://)?(?:www\.)?linkedin\.com/in/[\w-]+', v, re.IGNORECASE)
+        if match:
+            url = match.group(0)
+            if not url.startswith('http'):
+                url = 'https://' + url
+            return url
+        return None  # Invalid LinkedIn, set to None instead of raising
+
+    @field_validator('phone', mode='before')
+    @classmethod
+    def normalize_phone(cls, v: Optional[str]) -> Optional[str]:
+        """Normalize phone number format."""
+        if v is None or v == "":
+            return None
+        # Remove common separators and normalize
+        v = re.sub(r'[\s\-\.\(\)]', '', v.strip())
+        # Basic validation: should contain mostly digits
+        digits = re.sub(r'\D', '', v)
+        if len(digits) >= 8:  # Minimum phone length
+            return v
+        return None
 
     def get_skill_names(self) -> set[str]:
         """Get normalized skill names as a set (lowercase)."""

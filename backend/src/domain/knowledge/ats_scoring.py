@@ -187,6 +187,15 @@ KEYWORD_CATEGORIES: dict[str, dict[str, Any]] = {
             "agile",
             "scrum",
             "mentoring",
+            # Brazilian PT-BR soft skills (P3.2)
+            "liderança",
+            "comunicação",
+            "trabalho em equipe",
+            "resolução de problemas",
+            "gestão de pessoas",
+            "gestão de projetos",
+            "proatividade",
+            "autogestão",
         ],
     },
     "methodologies": {
@@ -200,6 +209,28 @@ KEYWORD_CATEGORIES: dict[str, dict[str, Any]] = {
             "bdd",
             "devops",
             "microservices",
+            # Brazilian common terms (P3.2)
+            "metodologia ágil",
+            "entregas contínuas",
+            "integração contínua",
+            "desenvolvimento ágil",
+        ],
+    },
+    # Brazilian market specific (P3.2)
+    "brazilian_tech": {
+        "weight": "high",
+        "examples": [
+            "pix",
+            "sped",
+            "nota fiscal eletrônica",
+            "nfe",
+            "nfse",
+            "sefaz",
+            "boleto",
+            "totvs",
+            "senior sistemas",
+            "sankhya",
+            "lgpd",
         ],
     },
 }

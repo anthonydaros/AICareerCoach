@@ -2,7 +2,7 @@
 
 import json
 import logging
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 from openai import AsyncOpenAI
 
@@ -17,6 +17,7 @@ from src.infrastructure.llm.prompts import (
     COACHING_GENERATION_PROMPT,
     COACHING_GENERATION_SYSTEM,
 )
+from src.infrastructure.llm.prompts.interview_generation import SENIORITY_CONTEXT
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +72,8 @@ class OpenAIGateway:
         self,
         system_prompt: str,
         user_prompt: str,
+        temperature: float = 0.0,
+        max_tokens: Optional[int] = None,
     ) -> Union[dict[str, Any], list[Any]]:
         """
         Send a chat request expecting JSON response.
@@ -78,6 +81,8 @@ class OpenAIGateway:
         Args:
             system_prompt: System message for context
             user_prompt: User message with the request
+            temperature: Temperature for this request (default 0.0 for deterministic JSON)
+            max_tokens: Max tokens for this request (defaults to instance setting)
 
         Returns:
             Parsed JSON response as dictionary or list
@@ -87,11 +92,13 @@ class OpenAIGateway:
             {"role": "user", "content": user_prompt},
         ]
 
+        # Use temperature=0.0 for JSON extraction (more deterministic)
+        # Higher temperature for creative generation
         response = await self.client.chat.completions.create(
             model=self.model,
             messages=messages,
-            temperature=self.temperature,
-            max_tokens=self.max_tokens,
+            temperature=temperature,
+            max_tokens=max_tokens or self.max_tokens,
         )
 
         content = response.choices[0].message.content or ""
@@ -170,10 +177,18 @@ class OpenAIGateway:
             Dictionary with extracted resume data
         """
         prompt = RESUME_EXTRACTION_PROMPT.format(resume_text=text)
-        result = await self._chat_json(RESUME_EXTRACTION_SYSTEM, prompt)
+        # Use temperature=0.0 for deterministic JSON extraction
+        result = await self._chat_json(RESUME_EXTRACTION_SYSTEM, prompt, temperature=0.0, max_tokens=2000)
 
         # Ensure required fields exist with defaults (use 'or' to handle None values)
         return {
+            # Contact information (P1.1)
+            "name": result.get("name"),
+            "email": result.get("email"),
+            "phone": result.get("phone"),
+            "linkedin_url": result.get("linkedin_url"),
+            "location": result.get("location"),
+            # Extracted data
             "skills": result.get("skills") or [],
             "experiences": result.get("experiences") or [],
             "education": result.get("education") or [],
@@ -192,7 +207,8 @@ class OpenAIGateway:
             Dictionary with extracted job data
         """
         prompt = JOB_EXTRACTION_PROMPT.format(job_text=text)
-        result = await self._chat_json(JOB_EXTRACTION_SYSTEM, prompt)
+        # Use temperature=0.0 for deterministic JSON extraction
+        result = await self._chat_json(JOB_EXTRACTION_SYSTEM, prompt, temperature=0.0, max_tokens=1500)
 
         # Ensure required fields exist with defaults (use 'or' to handle None values)
         return {
@@ -203,6 +219,13 @@ class OpenAIGateway:
             "keywords": result.get("keywords") or [],
             "min_experience_years": result.get("min_experience_years") or 0,
             "education_requirements": result.get("education_requirements") or [],
+            # Enhanced fields (P1.3)
+            "seniority_level": result.get("seniority_level"),
+            "remote_policy": result.get("remote_policy") or "unknown",
+            "salary_min": result.get("salary_min"),
+            "salary_max": result.get("salary_max"),
+            "salary_currency": result.get("salary_currency") or "USD",
+            "location": result.get("location"),
         }
 
     async def generate_interview_questions(
@@ -210,27 +233,38 @@ class OpenAIGateway:
         resume_summary: str,
         job_summary: str,
         skill_gaps: list[str],
+        seniority_level: str = "mid",
     ) -> list[dict[str, Any]]:
         """
-        Generate interview preparation questions.
+        Generate interview preparation questions personalized by seniority.
 
         Args:
             resume_summary: Summary of candidate's resume
             job_summary: Summary of job requirements
             skill_gaps: List of skills the candidate is missing
+            seniority_level: Candidate's detected seniority level (P2.3)
 
         Returns:
             List of question objects
         """
         gaps_text = ", ".join(skill_gaps) if skill_gaps else "None identified"
 
+        # Get seniority context for difficulty adjustment
+        difficulty_context = SENIORITY_CONTEXT.get(
+            seniority_level.lower(),
+            SENIORITY_CONTEXT.get("mid", "")
+        )
+
         prompt = INTERVIEW_GENERATION_PROMPT.format(
             resume_summary=resume_summary,
             job_requirements=job_summary,
             skill_gaps=gaps_text,
+            seniority_level=seniority_level,
+            difficulty_context=difficulty_context,
         )
 
-        result = await self._chat_json(INTERVIEW_GENERATION_SYSTEM, prompt)
+        # Use slightly higher temperature for creative question generation
+        result = await self._chat_json(INTERVIEW_GENERATION_SYSTEM, prompt, temperature=0.3, max_tokens=2500)
 
         # Handle both list response and dict with questions key
         if isinstance(result, list):

@@ -11,6 +11,50 @@ from src.domain.entities.analysis_result import (
 from src.infrastructure.llm import OpenAIGateway
 
 
+# Learning path tiers with estimated times (P3.3)
+LEARNING_PATHS: dict[str, dict[str, Any]] = {
+    # Programming Languages
+    "python": {"tier": "foundational", "hours": 40, "resources": ["Codecademy", "Python.org", "freeCodeCamp"]},
+    "javascript": {"tier": "foundational", "hours": 50, "resources": ["MDN Web Docs", "freeCodeCamp", "JavaScript.info"]},
+    "typescript": {"tier": "intermediate", "hours": 20, "resources": ["TypeScript Docs", "Total TypeScript"]},
+    "java": {"tier": "foundational", "hours": 60, "resources": ["Oracle Java Tutorials", "Codecademy"]},
+    "go": {"tier": "intermediate", "hours": 30, "resources": ["Go Tour", "Go by Example", "Gophercises"]},
+    "rust": {"tier": "advanced", "hours": 80, "resources": ["Rust Book", "Rustlings", "Exercism"]},
+
+    # Frameworks
+    "react": {"tier": "intermediate", "hours": 40, "resources": ["React Docs", "Scrimba", "freeCodeCamp"]},
+    "django": {"tier": "intermediate", "hours": 35, "resources": ["Django Docs", "Django Girls", "MDN"]},
+    "fastapi": {"tier": "intermediate", "hours": 20, "resources": ["FastAPI Docs", "TestDriven.io"]},
+    "node.js": {"tier": "intermediate", "hours": 30, "resources": ["Node.js Docs", "NodeSchool", "freeCodeCamp"]},
+    "spring": {"tier": "advanced", "hours": 50, "resources": ["Spring.io", "Baeldung"]},
+    "next.js": {"tier": "intermediate", "hours": 25, "resources": ["Next.js Docs", "Vercel Tutorials"]},
+
+    # DevOps & Cloud
+    "docker": {"tier": "intermediate", "hours": 25, "resources": ["Docker Docs", "Docker Mastery", "KodeKloud"]},
+    "kubernetes": {"tier": "advanced", "hours": 60, "resources": ["Kubernetes.io", "KodeKloud", "CKAD Course"]},
+    "aws": {"tier": "advanced", "hours": 80, "resources": ["AWS Training", "A Cloud Guru", "Tutorials Dojo"]},
+    "terraform": {"tier": "intermediate", "hours": 30, "resources": ["Terraform Docs", "HashiCorp Learn"]},
+    "ci/cd": {"tier": "intermediate", "hours": 20, "resources": ["GitHub Actions Docs", "GitLab CI Tutorials"]},
+    "linux": {"tier": "foundational", "hours": 40, "resources": ["Linux Foundation", "Linux Journey"]},
+
+    # Data & ML
+    "sql": {"tier": "foundational", "hours": 30, "resources": ["SQLZoo", "Mode Analytics", "W3Schools"]},
+    "postgresql": {"tier": "intermediate", "hours": 25, "resources": ["PostgreSQL Docs", "PostgreSQL Tutorial"]},
+    "machine learning": {"tier": "advanced", "hours": 100, "resources": ["Andrew Ng's ML Course", "Fast.ai", "Kaggle"]},
+    "pytorch": {"tier": "advanced", "hours": 60, "resources": ["PyTorch Tutorials", "Fast.ai", "Deep Learning with PyTorch"]},
+    "tensorflow": {"tier": "advanced", "hours": 60, "resources": ["TensorFlow Tutorials", "Coursera Specialization"]},
+    "langchain": {"tier": "intermediate", "hours": 25, "resources": ["LangChain Docs", "DeepLearning.AI Course"]},
+    "llm": {"tier": "advanced", "hours": 50, "resources": ["Hugging Face Course", "DeepLearning.AI", "OpenAI Docs"]},
+
+    # Soft Skills
+    "leadership": {"tier": "advanced", "hours": 40, "resources": ["HBR Articles", "Manager Tools", "The Manager's Path"]},
+    "communication": {"tier": "foundational", "hours": 20, "resources": ["Toastmasters", "Crucial Conversations Book"]},
+    "system design": {"tier": "advanced", "hours": 60, "resources": ["System Design Primer", "Designing Data-Intensive Apps", "ByteByteGo"]},
+}
+
+TIER_ORDER = {"foundational": 1, "intermediate": 2, "advanced": 3}
+
+
 class GenerateCoachingTipsUseCase:
     """Use case for generating career coaching tips with enhanced gap analysis."""
 
@@ -282,3 +326,65 @@ class GenerateCoachingTipsUseCase:
                 )
 
         return paths
+
+    def generate_learning_path(
+        self,
+        missing_skills: list[str],
+    ) -> list[dict[str, Any]]:
+        """
+        Generate a prioritized learning path for missing skills (P3.3).
+
+        Args:
+            missing_skills: List of skills the candidate needs to learn
+
+        Returns:
+            List of learning milestones with tier, hours, and resources
+        """
+        learning_path = []
+
+        for skill in missing_skills:
+            skill_lower = skill.lower().strip()
+
+            # Try exact match first
+            if skill_lower in LEARNING_PATHS:
+                path_info = LEARNING_PATHS[skill_lower]
+                learning_path.append({
+                    "skill": skill,
+                    "tier": path_info["tier"],
+                    "estimated_hours": path_info["hours"],
+                    "resources": path_info["resources"],
+                    "milestone": f"Complete {skill} fundamentals",
+                })
+            else:
+                # Try partial match
+                matched = False
+                for known_skill, path_info in LEARNING_PATHS.items():
+                    if known_skill in skill_lower or skill_lower in known_skill:
+                        learning_path.append({
+                            "skill": skill,
+                            "tier": path_info["tier"],
+                            "estimated_hours": path_info["hours"],
+                            "resources": path_info["resources"],
+                            "milestone": f"Complete {skill} fundamentals",
+                        })
+                        matched = True
+                        break
+
+                if not matched:
+                    # Default learning path for unknown skills
+                    learning_path.append({
+                        "skill": skill,
+                        "tier": "intermediate",
+                        "estimated_hours": 30,
+                        "resources": ["Udemy", "Coursera", "YouTube Tutorials", "Official Documentation"],
+                        "milestone": f"Gain foundational knowledge in {skill}",
+                    })
+
+        # Sort by tier order (foundational first, then intermediate, then advanced)
+        learning_path.sort(key=lambda x: TIER_ORDER.get(x["tier"], 2))
+
+        return learning_path
+
+    def get_total_learning_hours(self, learning_path: list[dict[str, Any]]) -> int:
+        """Calculate total estimated learning hours for the path."""
+        return sum(item.get("estimated_hours", 0) for item in learning_path)

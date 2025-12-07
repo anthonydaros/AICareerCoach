@@ -1,41 +1,42 @@
-"""Job posting extraction prompt."""
+"""Job posting extraction prompt - Optimized for accuracy and token efficiency."""
 
-JOB_EXTRACTION_SYSTEM = """You are an expert job posting analyzer. Your task is to extract structured requirements from job posting text.
-You must return a valid JSON object with the exact schema specified.
-Carefully distinguish between:
-- Required skills (must-have)
-- Preferred/nice-to-have skills
-- Keywords that appear throughout the posting
+JOB_EXTRACTION_SYSTEM = """Expert job posting analyzer. Extract structured data as JSON.
 
-Pay attention to phrases like:
-- "Required", "Must have", "Essential" -> is_required: true
-- "Preferred", "Nice to have", "Bonus", "Plus" -> is_required: false"""
+Distinguish: Required ("Must have", "Essential") vs Preferred ("Nice to have", "Bonus", "Plus").
+Detect seniority: intern, junior, mid, senior, lead, staff, principal, director, executive.
+Detect remote policy: onsite, hybrid, remote."""
 
-JOB_EXTRACTION_PROMPT = """Extract structured information from this job posting and return as JSON.
+JOB_EXTRACTION_PROMPT = """Extract structured data from this job posting. Return ONLY valid JSON.
 
 Job Posting:
 {job_text}
 
-Return a JSON object with this exact structure:
+JSON Schema:
 {{
-    "title": "job title",
-    "company": "company name or null if not mentioned",
+    "title": "exact job title",
+    "company": "company name or null",
+    "seniority_level": "intern|junior|mid|senior|lead|staff|principal|director|executive or null",
+    "remote_policy": "onsite|hybrid|remote|unknown",
+    "location": "job location or null",
+    "salary_min": integer or null,
+    "salary_max": integer or null,
+    "salary_currency": "USD|BRL|EUR|etc",
     "requirements": [
         {{
-            "skill": "skill name (normalized)",
-            "min_years": null or minimum years required,
-            "is_required": true for required, false for nice-to-have
+            "skill": "normalized skill name",
+            "min_years": integer or null,
+            "is_required": true|false
         }}
     ],
-    "preferred_skills": ["nice-to-have skills not in requirements"],
-    "keywords": ["important keywords from the posting"],
-    "min_experience_years": minimum total experience required (integer),
-    "education_requirements": ["CS degree", "Bachelor's", etc.]
+    "preferred_skills": ["nice-to-have not in requirements"],
+    "keywords": ["tech keywords"],
+    "min_experience_years": integer (minimum from range, e.g., "3-5 years" → 3),
+    "education_requirements": ["degree requirements"]
 }}
 
-Important:
-- Extract the exact job title as written
-- Distinguish required vs preferred skills carefully
-- Include technology-specific keywords (Python, AWS, Docker, etc.)
-- Extract education requirements even if flexible
-- min_experience_years should be the minimum mentioned (e.g., "3-5 years" -> 3)"""
+Rules:
+- Detect seniority from title/requirements (Senior Engineer → senior, Tech Lead → lead)
+- Extract salary if mentioned (annual, convert if needed)
+- "Remote", "Work from home" → remote; "Hybrid" → hybrid; office-only → onsite
+- "Required"/"Must have" → is_required: true
+- "Preferred"/"Nice to have"/"Plus" → is_required: false"""

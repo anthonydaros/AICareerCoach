@@ -61,6 +61,20 @@ class ATSResult(BaseModel):
         description="Explanation of ATS scoring methodology"
     )
 
+    # P2.2: Additional fields for completeness analysis
+    contact_info_present: bool = Field(
+        default=False,
+        description="Whether all contact info is present (email, phone, linkedin)"
+    )
+    section_completeness: dict[str, bool] = Field(
+        default_factory=dict,
+        description="Completeness of each resume section (experience, education, skills, etc.)"
+    )
+    improvement_priority: list[str] = Field(
+        default_factory=list,
+        description="Top 3-5 prioritized improvement actions"
+    )
+
     class Config:
         frozen = True
 

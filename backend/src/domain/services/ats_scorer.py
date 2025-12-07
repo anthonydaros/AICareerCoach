@@ -48,11 +48,11 @@ ROLE_TYPE_KEYWORDS = {
 
 WEIGHTS_BY_ROLE = {
     "technical": {
-        "skill_match": ATS_WEIGHTS["skills"],
-        "experience": ATS_WEIGHTS["experience"],
-        "education": ATS_WEIGHTS["education"],
-        "certifications": ATS_WEIGHTS["certifications"],
-        "keywords": ATS_WEIGHTS["keywords"],
+        "skill_match": ATS_WEIGHTS["skills"]["max_points"],
+        "experience": ATS_WEIGHTS["experience"]["max_points"],
+        "education": ATS_WEIGHTS["education"]["max_points"],
+        "certifications": ATS_WEIGHTS["certifications"]["max_points"],
+        "keywords": ATS_WEIGHTS["keywords"]["max_points"],
         "portfolio": 0.0,
         "leadership": 0.0,
     },

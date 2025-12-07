@@ -629,6 +629,147 @@ SKILL_RELATIONSHIPS: Dict[str, List[str]] = {
         "react native", "mobile development", "cross-platform",
         "javascript", "eas",
     ],
+
+    # =========================================
+    # SOFT SKILLS (P3.1 - Leadership & Communication)
+    # =========================================
+
+    "leadership": [
+        "team management", "mentoring", "coaching", "delegation",
+        "decision making", "conflict resolution", "strategic thinking",
+        "people management", "team building", "motivation",
+    ],
+    "communication": [
+        "presentation", "written communication", "verbal communication",
+        "stakeholder management", "technical writing", "documentation",
+        "public speaking", "negotiation", "active listening",
+    ],
+    "problem solving": [
+        "analytical thinking", "critical thinking", "root cause analysis",
+        "troubleshooting", "debugging", "decision making", "creativity",
+    ],
+    "collaboration": [
+        "teamwork", "cross-functional", "pair programming", "code review",
+        "knowledge sharing", "mentoring", "remote collaboration",
+    ],
+    "time management": [
+        "prioritization", "organization", "deadline management",
+        "multitasking", "planning", "productivity",
+    ],
+    "adaptability": [
+        "flexibility", "learning agility", "growth mindset",
+        "change management", "resilience",
+    ],
+
+    # =========================================
+    # EMERGING TECH 2024-2025 (P3.1)
+    # =========================================
+
+    # AI Agents & Multi-Agent Systems
+    "ai agents": [
+        "crewai", "autogen", "langchain agents", "multi-agent systems",
+        "autonomous agents", "agent orchestration", "llm",
+    ],
+    "multi-agent systems": [
+        "crewai", "autogen", "swarm intelligence", "agent coordination",
+        "task orchestration", "llm", "ai agents",
+    ],
+
+    # Advanced RAG Techniques
+    "advanced rag": [
+        "rag", "hybrid search", "reranking", "query expansion",
+        "semantic chunking", "contextual retrieval", "llamaindex",
+    ],
+    "graph rag": [
+        "knowledge graphs", "neo4j", "rag", "graph database",
+        "entity extraction", "relationship extraction",
+    ],
+
+    # AI Code Assistants
+    "cursor": [
+        "ai coding", "code completion", "llm", "vscode",
+        "copilot alternative", "ai pair programming",
+    ],
+    "github copilot": [
+        "ai coding", "code completion", "llm", "vscode",
+        "code generation", "ai pair programming",
+    ],
+    "claude code": [
+        "ai coding", "code generation", "llm", "anthropic",
+        "agentic coding", "ai pair programming",
+    ],
+
+    # Model Deployment & Inference
+    "local llm": [
+        "ollama", "llama.cpp", "model quantization", "gguf",
+        "self-hosted", "on-premise ai", "llm",
+    ],
+    "model quantization": [
+        "gguf", "gptq", "awq", "int4", "int8",
+        "model compression", "edge ai",
+    ],
+
+    # Observability & MLOps
+    "llm observability": [
+        "langsmith", "phoenix", "arize", "tracing",
+        "prompt monitoring", "cost tracking", "mlops",
+    ],
+    "langsmith": [
+        "langchain", "tracing", "debugging", "prompt testing",
+        "llm observability", "evaluation",
+    ],
+
+    # Vector & Hybrid Search
+    "hybrid search": [
+        "vector search", "keyword search", "bm25", "semantic search",
+        "rag", "elasticsearch", "opensearch",
+    ],
+    "qdrant": [
+        "vector database", "embeddings", "similarity search",
+        "rag", "semantic search",
+    ],
+    "milvus": [
+        "vector database", "embeddings", "similarity search",
+        "rag", "distributed", "scalable",
+    ],
+
+    # Edge & On-Device AI
+    "edge ai": [
+        "tensorflow lite", "onnx", "model optimization",
+        "on-device inference", "mobile ai", "iot",
+    ],
+    "webgpu": [
+        "web ai", "browser inference", "gpu acceleration",
+        "wasm", "web development",
+    ],
+
+    # No-Code AI
+    "flowise": [
+        "no-code ai", "langchain", "visual workflow",
+        "chatbot builder", "rag builder",
+    ],
+    "langflow": [
+        "no-code ai", "langchain", "visual programming",
+        "low-code", "ai workflow",
+    ],
+
+    # AI Infrastructure
+    "groq": [
+        "llm inference", "fast inference", "lpu",
+        "llm api", "low latency",
+    ],
+    "together ai": [
+        "llm api", "open source models", "inference",
+        "fine-tuning", "embeddings",
+    ],
+    "replicate": [
+        "model hosting", "api", "serverless",
+        "image generation", "llm",
+    ],
+    "runpod": [
+        "gpu cloud", "model hosting", "serverless gpu",
+        "inference", "training",
+    ],
 }
 
 # Aliases for skills (alternative names for the same skill)
@@ -757,7 +898,7 @@ SKILL_ALIASES: Dict[str, str] = {
 # Transferable skills matrix - maps skills that can transfer to other roles
 TRANSFERABLE_SKILLS: Dict[str, List[str]] = {
     # From backend to related areas
-    "python": ["data science", "machine learning", "automation", "scripting"],
+    "python": ["data science", "machine learning", "automation", "scripting", "ai engineering"],
     "java": ["android", "enterprise", "microservices"],
     "javascript": ["frontend", "full stack", "react native"],
 
@@ -774,12 +915,12 @@ TRANSFERABLE_SKILLS: Dict[str, List[str]] = {
     # From ML to related areas
     "machine learning": ["data science", "ai engineering", "mlops"],
     "pytorch": ["deep learning", "research", "computer vision", "nlp"],
-    "langchain": ["ai engineering", "rag", "llm applications"],
+    "langchain": ["ai engineering", "rag", "llm applications", "ai agents"],
 
     # From management to related areas
     "project management": ["product management", "scrum master", "team lead"],
     "agile": ["scrum master", "product owner", "project management"],
-    "leadership": ["management", "tech lead", "director"],
+    "leadership": ["management", "tech lead", "director", "engineering manager"],
 
     # From QA to related areas
     "test automation": ["sdet", "devops", "software engineering"],
@@ -788,6 +929,18 @@ TRANSFERABLE_SKILLS: Dict[str, List[str]] = {
     # From design to related areas
     "figma": ["product design", "ux design", "ui design"],
     "ux design": ["product design", "user research", "product management"],
+
+    # P3.1: Soft skills transferability
+    "communication": ["product management", "technical writing", "developer relations", "sales engineering"],
+    "problem solving": ["consulting", "solutions architecture", "technical leadership"],
+    "mentoring": ["tech lead", "engineering manager", "training", "developer advocacy"],
+    "collaboration": ["cross-functional roles", "platform teams", "consulting"],
+
+    # P3.1: Emerging tech transferability
+    "langchain": ["ai engineering", "rag", "chatbot development", "llm applications"],
+    "rag": ["ai engineering", "search engineering", "knowledge management"],
+    "prompt engineering": ["ai engineering", "llm applications", "ai product management"],
+    "ai agents": ["automation", "ai engineering", "product development"],
 }
 
 
