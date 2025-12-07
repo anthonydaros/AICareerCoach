@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     openrouter_app_url: str = ""
     openrouter_app_name: str = "AI Career Coach"
 
+    # Google Gemini Fallback (direct API - bypasses OpenRouter rate limits)
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.5-flash"
+
     # API Configuration
     api_host: str = "0.0.0.0"
     api_port: int = 8000
