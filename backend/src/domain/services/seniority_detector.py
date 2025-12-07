@@ -6,6 +6,7 @@ from typing import List, Dict, Any, Optional
 from dataclasses import dataclass, field
 
 from src.domain.entities.resume import Resume
+from src.domain.entities.job_posting import JobPosting
 
 
 class SeniorityLevel(str, Enum):
@@ -16,13 +17,29 @@ class SeniorityLevel(str, Enum):
 
 
 @dataclass
+class SeniorityAxis:
+    """Single axis comparison between candidate and job."""
+    axis: str
+    candidate_level: str
+    candidate_score: float
+    job_expected_level: str
+    evidence: str
+
+
+@dataclass
 class SeniorityResult:
-    """Result of seniority detection."""
+    """Result of seniority detection with job fit comparison."""
     level: SeniorityLevel
     confidence: float  # 0-100
     years_experience: float
     scores: Dict[str, float] = field(default_factory=dict)
     indicators: List[str] = field(default_factory=list)
+
+    # Enhanced fields for job fit comparison
+    axis_comparison: List[SeniorityAxis] = field(default_factory=list)
+    job_fit_assessment: str = ""
+    gap_analysis: str = ""
+    seniority_match: str = ""  # "under-qualified", "match", "over-qualified"
 
 
 # Seniority indicator patterns (Portuguese + English)
@@ -157,15 +174,16 @@ class SeniorityDetector:
         "impact": 0.10,
     }
 
-    def detect(self, resume: Resume) -> SeniorityResult:
+    def detect(self, resume: Resume, job: Optional[JobPosting] = None) -> SeniorityResult:
         """
-        Detect seniority level from resume.
+        Detect seniority level from resume with optional job comparison.
 
         Args:
             resume: Parsed Resume entity
+            job: Optional JobPosting for job fit comparison
 
         Returns:
-            SeniorityResult with level, confidence, and indicators
+            SeniorityResult with level, confidence, indicators, and job fit assessment
         """
         text = resume.raw_content.lower()
         indicators = []
@@ -198,12 +216,29 @@ class SeniorityDetector:
         # Determine level based on score
         level, confidence = self._determine_level(weighted_score, scores)
 
+        # Generate job fit comparison if job is provided
+        axis_comparison = []
+        job_fit_assessment = ""
+        gap_analysis = ""
+        seniority_match = ""
+
+        if job:
+            job_expected_level = self._detect_job_seniority(job)
+            axis_comparison = self._generate_axis_comparison(scores, job, job_expected_level)
+            job_fit_assessment = self._generate_job_fit_assessment(level, job_expected_level, scores)
+            gap_analysis = self._generate_seniority_gap_analysis(level, job_expected_level, scores, resume, job)
+            seniority_match = self._determine_seniority_match(level, job_expected_level)
+
         return SeniorityResult(
             level=level,
             confidence=confidence,
             years_experience=resume.total_experience_years,
             scores=scores,
             indicators=indicators,
+            axis_comparison=axis_comparison,
+            job_fit_assessment=job_fit_assessment,
+            gap_analysis=gap_analysis,
+            seniority_match=seniority_match,
         )
 
     def _score_experience(self, resume: Resume, indicators: List[str]) -> float:
@@ -432,3 +467,178 @@ class SeniorityDetector:
             confidence = min(100, 90 - score)  # More confident if score is lower
 
         return level, round(confidence, 1)
+
+    def _detect_job_seniority(self, job: JobPosting) -> SeniorityLevel:
+        """Detect expected seniority level from job posting."""
+        job_text = f"{job.title or ''} {job.raw_text or ''}".lower()
+
+        # Check for explicit seniority indicators
+        if any(re.search(pattern, job_text, re.IGNORECASE) for pattern in SENIOR_TITLES):
+            return SeniorityLevel.SENIOR
+        elif any(re.search(pattern, job_text, re.IGNORECASE) for pattern in JUNIOR_TITLES):
+            return SeniorityLevel.JUNIOR
+        elif any(re.search(pattern, job_text, re.IGNORECASE) for pattern in MID_TITLES):
+            return SeniorityLevel.MID
+
+        # Infer from experience requirement
+        if job.min_experience_years >= 5:
+            return SeniorityLevel.SENIOR
+        elif job.min_experience_years >= 2:
+            return SeniorityLevel.MID
+        else:
+            return SeniorityLevel.JUNIOR
+
+    def _generate_axis_comparison(
+        self,
+        scores: Dict[str, float],
+        job: JobPosting,
+        job_level: SeniorityLevel,
+    ) -> List[SeniorityAxis]:
+        """Generate axis-by-axis comparison between candidate and job."""
+        axis_names = {
+            "experience": "Years of Experience",
+            "complexity": "Technical Complexity",
+            "autonomy": "Autonomy & Ownership",
+            "skills": "Skill Sophistication",
+            "leadership": "Leadership & Mentoring",
+            "impact": "Business Impact",
+        }
+
+        # Expected scores for each level
+        level_expectations = {
+            SeniorityLevel.JUNIOR: {"experience": 0.3, "complexity": 0.3, "autonomy": 0.3, "skills": 0.4, "leadership": 0.2, "impact": 0.3},
+            SeniorityLevel.MID: {"experience": 0.6, "complexity": 0.6, "autonomy": 0.6, "skills": 0.6, "leadership": 0.5, "impact": 0.5},
+            SeniorityLevel.SENIOR: {"experience": 0.85, "complexity": 0.8, "autonomy": 0.8, "skills": 0.8, "leadership": 0.7, "impact": 0.7},
+        }
+
+        expected = level_expectations.get(job_level, level_expectations[SeniorityLevel.MID])
+        comparison = []
+
+        for axis_key, axis_name in axis_names.items():
+            candidate_score = scores.get(axis_key, 0.5)
+            expected_score = expected.get(axis_key, 0.5)
+
+            # Determine candidate level for this axis
+            if candidate_score >= 0.7:
+                candidate_level = "Senior"
+            elif candidate_score >= 0.4:
+                candidate_level = "Mid"
+            else:
+                candidate_level = "Junior"
+
+            # Determine job expected level for this axis
+            if expected_score >= 0.7:
+                job_expected = "Senior"
+            elif expected_score >= 0.4:
+                job_expected = "Mid"
+            else:
+                job_expected = "Junior"
+
+            # Generate evidence
+            if candidate_score >= expected_score:
+                evidence = f"Meets or exceeds expectations (score: {candidate_score:.0%} vs {expected_score:.0%} expected)"
+            else:
+                gap = expected_score - candidate_score
+                if gap > 0.3:
+                    evidence = f"Significant gap - needs development (score: {candidate_score:.0%} vs {expected_score:.0%} expected)"
+                else:
+                    evidence = f"Minor gap - can grow into role (score: {candidate_score:.0%} vs {expected_score:.0%} expected)"
+
+            comparison.append(SeniorityAxis(
+                axis=axis_name,
+                candidate_level=candidate_level,
+                candidate_score=round(candidate_score * 100, 1),
+                job_expected_level=job_expected,
+                evidence=evidence,
+            ))
+
+        return comparison
+
+    def _generate_job_fit_assessment(
+        self,
+        candidate_level: SeniorityLevel,
+        job_level: SeniorityLevel,
+        scores: Dict[str, float],
+    ) -> str:
+        """Generate overall job fit assessment."""
+        level_order = {SeniorityLevel.JUNIOR: 0, SeniorityLevel.MID: 1, SeniorityLevel.SENIOR: 2}
+        candidate_rank = level_order[candidate_level]
+        job_rank = level_order[job_level]
+
+        if candidate_rank == job_rank:
+            return (
+                f"Your seniority level ({candidate_level.value.title()}) matches the job requirements "
+                f"({job_level.value.title()}). You are well-positioned for this role. Focus on demonstrating "
+                "your relevant experience and skills during the interview process."
+            )
+        elif candidate_rank > job_rank:
+            return (
+                f"You appear to be over-qualified ({candidate_level.value.title()}) for this "
+                f"{job_level.value.title()}-level position. Consider whether this role aligns with your "
+                "career goals. If applying, emphasize your interest in the specific company/project "
+                "and willingness to contribute at this level."
+            )
+        else:
+            gap = job_rank - candidate_rank
+            if gap == 1:
+                return (
+                    f"You are slightly under the target seniority ({candidate_level.value.title()} vs "
+                    f"{job_level.value.title()}). This could be a stretch role for you. Emphasize your "
+                    "growth trajectory, learning ability, and any areas where you exceed expectations."
+                )
+            else:
+                return (
+                    f"There is a significant seniority gap ({candidate_level.value.title()} vs "
+                    f"{job_level.value.title()}). This role may be too senior for your current level. "
+                    "Consider gaining more experience or looking for roles that better match your level."
+                )
+
+    def _generate_seniority_gap_analysis(
+        self,
+        candidate_level: SeniorityLevel,
+        job_level: SeniorityLevel,
+        scores: Dict[str, float],
+        resume: Resume,
+        job: JobPosting,
+    ) -> str:
+        """Generate detailed gap analysis between candidate and job seniority."""
+        gaps = []
+
+        # Experience gap
+        exp_gap = job.min_experience_years - resume.total_experience_years
+        if exp_gap > 0:
+            gaps.append(f"Experience: Need {exp_gap:.0f} more year(s) ({resume.total_experience_years:.0f} vs {job.min_experience_years} required)")
+
+        # Identify weak areas
+        weak_areas = [(k, v) for k, v in scores.items() if v < 0.5]
+        weak_areas.sort(key=lambda x: x[1])
+
+        for area, score in weak_areas[:3]:
+            area_name = area.replace("_", " ").title()
+            gaps.append(f"{area_name}: Score {score:.0%} - needs improvement")
+
+        if not gaps:
+            return "No significant gaps identified. Your profile aligns well with the job requirements."
+
+        result = "Key Gaps to Address:\n"
+        for i, gap in enumerate(gaps, 1):
+            result += f"{i}. {gap}\n"
+
+        return result
+
+    def _determine_seniority_match(
+        self,
+        candidate_level: SeniorityLevel,
+        job_level: SeniorityLevel,
+    ) -> str:
+        """Determine if candidate is under-qualified, match, or over-qualified."""
+        level_order = {SeniorityLevel.JUNIOR: 0, SeniorityLevel.MID: 1, SeniorityLevel.SENIOR: 2}
+        candidate_rank = level_order[candidate_level]
+        job_rank = level_order[job_level]
+
+        if candidate_rank < job_rank:
+            return "under-qualified"
+        elif candidate_rank == job_rank:
+            return "match"
+        else:
+            return "over-qualified"

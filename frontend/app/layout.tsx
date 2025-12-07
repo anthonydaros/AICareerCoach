@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Orbitron, Rajdhani } from "next/font/google";
+import { ResultsProvider } from "@/contexts/ResultsContext";
 import "./globals.css";
 
 const orbitron = Orbitron({
@@ -42,7 +43,7 @@ export default function RootLayout({
         >
           Skip to main content
         </a>
-        {children}
+        <ResultsProvider>{children}</ResultsProvider>
       </body>
     </html>
   );

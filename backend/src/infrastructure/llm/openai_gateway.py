@@ -2,7 +2,7 @@
 
 import json
 import logging
-from typing import Any
+from typing import Any, Union
 
 from openai import AsyncOpenAI
 
@@ -62,7 +62,7 @@ class OpenAIGateway:
         self,
         system_prompt: str,
         user_prompt: str,
-    ) -> dict[str, Any]:
+    ) -> Union[dict[str, Any], list[Any]]:
         """
         Send a chat request expecting JSON response.
 
@@ -71,7 +71,7 @@ class OpenAIGateway:
             user_prompt: User message with the request
 
         Returns:
-            Parsed JSON response as dictionary
+            Parsed JSON response as dictionary or list
         """
         messages = [
             {"role": "system", "content": system_prompt},
@@ -85,22 +85,70 @@ class OpenAIGateway:
             max_tokens=self.max_tokens,
         )
 
-        content = response.choices[0].message.content
+        content = response.choices[0].message.content or ""
 
-        # Try to parse JSON from response
+        # Debug log the raw response
+        logger.debug(f"Raw LLM response (first 500 chars): {content[:500]}")
+
+        # Try multiple JSON extraction strategies
+        json_content = self._extract_json(content)
+
         try:
-            # Handle potential markdown code blocks
-            if "```json" in content:
-                content = content.split("```json")[1].split("```")[0]
-            elif "```" in content:
-                content = content.split("```")[1].split("```")[0]
-
-            return json.loads(content.strip())
+            return json.loads(json_content)
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse JSON response: {e}")
-            logger.debug(f"Raw response: {content}")
+            logger.warning(f"Raw response that failed parsing: {content[:500]}")
             # Return empty structure on parse failure
             return {}
+
+    def _extract_json(self, content: str) -> str:
+        """
+        Extract JSON from LLM response using multiple strategies.
+
+        Args:
+            content: Raw LLM response
+
+        Returns:
+            Extracted JSON string
+        """
+        content = content.strip()
+
+        # Strategy 1: Already valid JSON (starts with [ or {)
+        if content.startswith("[") or content.startswith("{"):
+            # Find the matching closing bracket
+            if content.startswith("["):
+                end_idx = content.rfind("]")
+                if end_idx != -1:
+                    return content[:end_idx + 1]
+            else:
+                end_idx = content.rfind("}")
+                if end_idx != -1:
+                    return content[:end_idx + 1]
+
+        # Strategy 2: Markdown code block with json tag
+        if "```json" in content:
+            parts = content.split("```json")
+            if len(parts) > 1:
+                json_part = parts[1].split("```")[0]
+                return json_part.strip()
+
+        # Strategy 3: Generic markdown code block
+        if "```" in content:
+            parts = content.split("```")
+            if len(parts) >= 2:
+                return parts[1].strip()
+
+        # Strategy 4: Find first [ or { and extract from there
+        for i, char in enumerate(content):
+            if char in "[{":
+                bracket = char
+                close_bracket = "]" if bracket == "[" else "}"
+                end_idx = content.rfind(close_bracket)
+                if end_idx > i:
+                    return content[i:end_idx + 1]
+
+        # Strategy 5: Return as-is and let JSON parser handle the error
+        return content
 
     async def extract_resume(self, text: str) -> dict[str, Any]:
         """

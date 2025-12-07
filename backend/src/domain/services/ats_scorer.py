@@ -5,7 +5,7 @@ from typing import Optional
 
 from src.domain.entities.resume import Resume
 from src.domain.entities.job_posting import JobPosting
-from src.domain.entities.analysis_result import ATSResult
+from src.domain.entities.analysis_result import ATSResult, KeywordAnalysis, KeywordWeight
 from src.domain.services.skill_relationships import expand_skills, normalize_skill
 
 
@@ -92,6 +92,37 @@ class ATSScorer:
             resume=resume,
         )
 
+        # Generate detailed keyword analysis
+        keyword_analysis = self._generate_keyword_analysis(
+            resume.raw_content,
+            required_skills,
+            all_job_skills,
+            job.keywords,
+            matched_skills,
+            missing_skills,
+        )
+
+        # Generate score calculation explanation
+        score_calculation = self._generate_score_calculation(
+            skill_score=skill_score,
+            experience_score=experience_score,
+            education_score=education_score,
+            certification_score=certification_score,
+            keyword_score=keyword_score,
+            total_score=total_score,
+            matched_required=len(matched_skills & required_skills) if required_skills else 0,
+            total_required=len(required_skills) if required_skills else 0,
+        )
+
+        # ATS methodology explanation
+        methodology = (
+            "ATS (Applicant Tracking System) score measures how well your resume matches "
+            "the job requirements. Modern ATS systems parse resumes for keywords, skills, "
+            "and experience. This analysis uses weighted criteria: Skills (40%), Experience (30%), "
+            "Education (15%), Certifications (10%), Keywords (5%). Critical keywords must appear "
+            "exactly as stated in the job posting. Scores above 80% typically pass initial screening."
+        )
+
         return ATSResult(
             total_score=round(total_score, 1),
             skill_score=round(skill_score, 1),
@@ -103,6 +134,9 @@ class ATSScorer:
             missing_keywords=list(missing_skills | set(missing_kw)),
             format_issues=format_issues,
             improvement_suggestions=suggestions,
+            keyword_analysis=keyword_analysis,
+            score_calculation=score_calculation,
+            methodology=methodology,
         )
 
     def _calculate_skill_score(
@@ -290,3 +324,103 @@ class ATSScorer:
             suggestions.append("Fix formatting issues for better ATS parsing")
 
         return suggestions
+
+    def _generate_keyword_analysis(
+        self,
+        resume_text: str,
+        required_skills: set[str],
+        all_job_skills: set[str],
+        keywords: list[str],
+        matched_skills: set[str],
+        missing_skills: set[str],
+    ) -> list[KeywordAnalysis]:
+        """Generate detailed keyword-by-keyword analysis with weights."""
+        analysis = []
+        text_lower = resume_text.lower()
+
+        # Analyze required skills (critical weight)
+        for skill in required_skills:
+            normalized = normalize_skill(skill)
+            found = normalized in matched_skills or skill.lower() in text_lower
+            observation = (
+                f"Found '{skill}' in your resume - exact match with job requirement"
+                if found
+                else f"'{skill}' is a required skill but not found in your resume"
+            )
+            analysis.append(KeywordAnalysis(
+                keyword=skill,
+                found_in_resume=found,
+                weight=KeywordWeight.CRITICAL,
+                observation=observation,
+            ))
+
+        # Analyze preferred/additional skills (high weight)
+        preferred_skills = all_job_skills - required_skills
+        for skill in preferred_skills:
+            normalized = normalize_skill(skill)
+            found = normalized in matched_skills or skill.lower() in text_lower
+            observation = (
+                f"'{skill}' found - strengthens your application"
+                if found
+                else f"'{skill}' is preferred but not found - consider adding if applicable"
+            )
+            analysis.append(KeywordAnalysis(
+                keyword=skill,
+                found_in_resume=found,
+                weight=KeywordWeight.HIGH,
+                observation=observation,
+            ))
+
+        # Analyze additional keywords (medium weight)
+        analyzed_keywords = required_skills | all_job_skills
+        for keyword in keywords:
+            if keyword.lower() not in {s.lower() for s in analyzed_keywords}:
+                found = keyword.lower() in text_lower
+                observation = (
+                    f"Keyword '{keyword}' present - good for ATS parsing"
+                    if found
+                    else f"Consider adding '{keyword}' if relevant to your experience"
+                )
+                analysis.append(KeywordAnalysis(
+                    keyword=keyword,
+                    found_in_resume=found,
+                    weight=KeywordWeight.MEDIUM,
+                    observation=observation,
+                ))
+
+        return analysis
+
+    def _generate_score_calculation(
+        self,
+        skill_score: float,
+        experience_score: float,
+        education_score: float,
+        certification_score: float,
+        keyword_score: float,
+        total_score: float,
+        matched_required: int,
+        total_required: int,
+    ) -> str:
+        """Generate human-readable score calculation explanation."""
+        lines = [
+            "Score Calculation Breakdown:",
+            f"",
+            f"Skills ({self.weights.skill_match:.0f} pts max):",
+            f"  - Matched {matched_required}/{total_required} required skills",
+            f"  - Score: {skill_score:.1f}/{self.weights.skill_match:.0f}",
+            f"",
+            f"Experience ({self.weights.experience:.0f} pts max):",
+            f"  - Score: {experience_score:.1f}/{self.weights.experience:.0f}",
+            f"",
+            f"Education ({self.weights.education:.0f} pts max):",
+            f"  - Score: {education_score:.1f}/{self.weights.education:.0f}",
+            f"",
+            f"Certifications ({self.weights.certifications:.0f} pts max):",
+            f"  - Score: {certification_score:.1f}/{self.weights.certifications:.0f}",
+            f"",
+            f"Keywords ({self.weights.keywords:.0f} pts max):",
+            f"  - Score: {keyword_score:.1f}/{self.weights.keywords:.0f}",
+            f"",
+            f"TOTAL: {total_score:.1f}/100",
+        ]
+        return "\n".join(lines)

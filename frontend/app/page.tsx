@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useState } from "react";
 import { Header } from "@/components/layout/Header";
 import { ResumeUploader } from "@/components/upload/ResumeUploader";
 import { JobPostInput, JobPostInputRef } from "@/components/input/JobPostInput";
@@ -9,14 +9,17 @@ import { Button } from "@/components/ui/button";
 import { Plus, Loader2 } from "lucide-react";
 import { useAnalysis } from "@/hooks/useAnalysis";
 import { DEMO_RESUME, DEMO_JOBS } from "@/lib/demo-data";
+import type { Job } from "@/lib/types";
 
 export default function Dashboard() {
   const jobInputRef = useRef<JobPostInputRef>(null);
+  const [currentJobs, setCurrentJobs] = useState<Job[]>([]);
   const {
     status,
     result,
     error,
     resumeFilename,
+    resumeText,
     hasResume,
     isLoading,
     handleFileUpload,
@@ -39,6 +42,7 @@ export default function Dashboard() {
 
   const handleInitiate = async () => {
     const jobs = jobInputRef.current?.getJobs() || [];
+    setCurrentJobs(jobs);
     await runAnalysis(jobs);
   };
 
@@ -48,6 +52,9 @@ export default function Dashboard() {
 
     // Load demo jobs into the job input component
     jobInputRef.current?.setJobs(DEMO_JOBS);
+
+    // Store jobs for passing to LivePreview
+    setCurrentJobs(DEMO_JOBS);
 
     // Run analysis with demo data passed directly (avoids state timing issues)
     await runAnalysis(DEMO_JOBS, DEMO_RESUME);
@@ -186,7 +193,13 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="flex-1 relative">
-              <LivePreview status={status} result={result} error={error} />
+              <LivePreview
+                status={status}
+                result={result}
+                error={error}
+                resumeText={resumeText || undefined}
+                jobs={currentJobs}
+              />
             </div>
           </div>
 

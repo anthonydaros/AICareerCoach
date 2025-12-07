@@ -1,13 +1,50 @@
 """Generate Interview Prep Use Case."""
 
-from typing import Any
+from typing import Any, Optional
+from collections import defaultdict
 
-from src.domain.entities.analysis_result import InterviewQuestion
+from src.domain.entities.analysis_result import InterviewQuestion, InterviewPrep, StarMethod
 from src.infrastructure.llm import OpenAIGateway
 
 
 class GenerateInterviewPrepUseCase:
-    """Use case for generating interview preparation questions."""
+    """Use case for generating comprehensive interview preparation."""
+
+    # Standard preparation tips
+    PREPARATION_TIPS = [
+        "Research the company's recent news, products, and culture before the interview",
+        "Prepare 2-3 specific examples for each type of behavioral question using the STAR method",
+        "Practice explaining your most complex projects in simple, non-technical terms",
+        "Prepare thoughtful questions that show genuine interest in the role and company",
+        "Review the job description and map your experiences to each requirement",
+        "Practice whiteboard/coding problems if technical interviews are expected",
+        "Get a good night's sleep and arrive 10-15 minutes early",
+        "Bring copies of your resume and a notebook for taking notes",
+    ]
+
+    # Questions to ask interviewer by category
+    QUESTIONS_TO_ASK = {
+        "role": [
+            "What does success look like in this role in the first 90 days?",
+            "What are the biggest challenges facing the team right now?",
+            "How does this role contribute to the company's overall goals?",
+        ],
+        "team": [
+            "Can you tell me about the team I'd be working with?",
+            "How does the team approach collaboration and code reviews?",
+            "What's the on-call rotation like for this team?",
+        ],
+        "growth": [
+            "What growth opportunities are available for someone in this role?",
+            "How does the company support professional development?",
+            "What's the typical career path for this position?",
+        ],
+        "company": [
+            "What do you enjoy most about working here?",
+            "How would you describe the company culture?",
+            "What's the company's approach to work-life balance?",
+        ],
+    }
 
     def __init__(self, llm_gateway: OpenAIGateway):
         self.llm_gateway = llm_gateway
@@ -17,17 +54,21 @@ class GenerateInterviewPrepUseCase:
         resume_summary: str,
         job_summary: str,
         skill_gaps: list[str],
-    ) -> list[InterviewQuestion]:
+        matched_skills: Optional[list[str]] = None,
+        job_title: Optional[str] = None,
+    ) -> InterviewPrep:
         """
-        Generate interview preparation questions.
+        Generate comprehensive interview preparation.
 
         Args:
             resume_summary: Summary of candidate's resume
             job_summary: Summary of job requirements
             skill_gaps: List of skills the candidate is missing
+            matched_skills: Optional list of matched skills
+            job_title: Optional job title for context
 
         Returns:
-            List of InterviewQuestion entities
+            InterviewPrep with questions, STAR guidance, and tips
         """
         # Generate questions using LLM
         questions_data = await self.llm_gateway.generate_interview_questions(
@@ -36,11 +77,32 @@ class GenerateInterviewPrepUseCase:
             skill_gaps=skill_gaps,
         )
 
-        # Convert to domain entities
-        return self._parse_questions(questions_data)
+        # Parse and enhance questions
+        questions = self._parse_questions(questions_data, resume_summary, skill_gaps)
 
-    def _parse_questions(self, questions_data: list[dict[str, Any]]) -> list[InterviewQuestion]:
-        """Parse questions from LLM response."""
+        # Organize questions by category
+        questions_by_category = self._organize_by_category(questions)
+
+        # Select preparation tips
+        preparation_tips = self._get_preparation_tips(skill_gaps, job_title)
+
+        # Select questions to ask interviewer
+        questions_to_ask = self._get_questions_to_ask(job_title)
+
+        return InterviewPrep(
+            questions=questions,
+            questions_by_category=questions_by_category,
+            preparation_tips=preparation_tips,
+            questions_to_ask_interviewer=questions_to_ask,
+        )
+
+    def _parse_questions(
+        self,
+        questions_data: list[dict[str, Any]],
+        resume_summary: str,
+        skill_gaps: list[str],
+    ) -> list[InterviewQuestion]:
+        """Parse questions from LLM response with STAR guidance."""
         questions = []
         for q in questions_data:
             if not isinstance(q, dict):
@@ -50,12 +112,188 @@ class GenerateInterviewPrepUseCase:
             if not question_text:
                 continue
 
+            category = q.get("category", "general").lower()
+
+            # Generate your_angle based on the question and resume
+            your_angle = self._generate_your_angle(question_text, category, resume_summary)
+
+            # Generate STAR guidance for behavioral questions
+            star_guidance = None
+            if category == "behavioral":
+                star_guidance = self._generate_star_guidance(question_text)
+
             questions.append(InterviewQuestion(
                 question=question_text,
-                category=q.get("category", "general"),
+                category=category,
                 why_asked=q.get("why_asked", ""),
                 what_to_say=q.get("what_to_say", []),
                 what_to_avoid=q.get("what_to_avoid", []),
+                your_angle=your_angle,
+                star_guidance=star_guidance,
             ))
 
         return questions
+
+    def _generate_your_angle(
+        self,
+        question: str,
+        category: str,
+        resume_summary: str,
+    ) -> str:
+        """Generate approach angle for the question based on candidate's background."""
+        question_lower = question.lower()
+
+        if category == "behavioral":
+            return (
+                "Use the STAR method to structure your answer. Choose a specific example "
+                "from your experience that demonstrates the skill being asked about. "
+                "Focus on YOUR actions and quantify the results if possible."
+            )
+        elif category == "technical":
+            return (
+                "Start with the fundamentals and build up to complexity. If you're unsure, "
+                "think out loud and show your problem-solving process. It's okay to ask "
+                "clarifying questions before diving into the solution."
+            )
+        elif "weakness" in question_lower or "improve" in question_lower:
+            return (
+                "Choose a real weakness but one you're actively working to improve. "
+                "Focus on the steps you've taken to address it and show self-awareness. "
+                "Avoid cliche answers like 'I'm a perfectionist'."
+            )
+        elif "why" in question_lower and ("company" in question_lower or "role" in question_lower):
+            return (
+                "Show you've done your research. Reference specific aspects of the company, "
+                "product, or role that genuinely interest you. Connect your career goals "
+                "to what this opportunity offers."
+            )
+        elif "tell me about yourself" in question_lower:
+            return (
+                "Keep it to 2-3 minutes. Structure as: current role, key achievements, "
+                "why you're interested in this opportunity. Make it a story, not a resume recitation."
+            )
+        else:
+            return (
+                "Be specific and use concrete examples. Structure your answer clearly "
+                "and stay focused on what's most relevant to the question."
+            )
+
+    def _generate_star_guidance(self, question: str) -> StarMethod:
+        """Generate STAR method guidance for behavioral questions."""
+        question_lower = question.lower()
+
+        # Default STAR guidance - can be customized based on question type
+        if "conflict" in question_lower or "disagree" in question_lower:
+            return StarMethod(
+                situation="Describe a specific professional disagreement or conflict (keep it professional, not personal)",
+                task="Explain your role and what needed to be resolved",
+                action="Detail how YOU approached the situation - focus on communication, compromise, and professionalism",
+                result="Share the outcome, what you learned, and how you'd handle it differently if needed",
+            )
+        elif "failure" in question_lower or "mistake" in question_lower:
+            return StarMethod(
+                situation="Choose a real failure but not something catastrophic",
+                task="Explain what you were trying to accomplish",
+                action="Describe what went wrong and take ownership without blaming others",
+                result="Focus on what you learned and how you've applied that lesson since",
+            )
+        elif "lead" in question_lower or "team" in question_lower:
+            return StarMethod(
+                situation="Set the context - team size, project type, and timeline",
+                task="Explain your leadership responsibilities and goals",
+                action="Describe specific leadership actions: delegation, motivation, conflict resolution",
+                result="Quantify the outcome: project success, team growth, metrics improved",
+            )
+        elif "challenge" in question_lower or "difficult" in question_lower:
+            return StarMethod(
+                situation="Describe a genuinely challenging situation (technical or interpersonal)",
+                task="Explain why it was challenging and what was at stake",
+                action="Detail your problem-solving approach step by step",
+                result="Share the outcome and what made your approach effective",
+            )
+        else:
+            return StarMethod(
+                situation="Set the scene briefly - when, where, who was involved",
+                task="Explain your specific responsibility or goal",
+                action="Describe what YOU did (use 'I' not 'we') with specific details",
+                result="Quantify the outcome if possible - numbers, percentages, time saved",
+            )
+
+    def _organize_by_category(
+        self,
+        questions: list[InterviewQuestion],
+    ) -> dict[str, list[InterviewQuestion]]:
+        """Organize questions by category."""
+        by_category = defaultdict(list)
+
+        for q in questions:
+            category = q.category.lower()
+            # Normalize category names
+            if category in ["screen", "screening"]:
+                category = "screening"
+            elif category in ["tech", "technical", "coding"]:
+                category = "technical"
+            elif category in ["behavior", "behavioral", "soft"]:
+                category = "behavioral"
+            elif category in ["curve", "curveball", "tricky"]:
+                category = "curveball"
+            else:
+                category = "general"
+
+            by_category[category].append(q)
+
+        return dict(by_category)
+
+    def _get_preparation_tips(
+        self,
+        skill_gaps: list[str],
+        job_title: Optional[str] = None,
+    ) -> list[str]:
+        """Get relevant preparation tips."""
+        tips = list(self.PREPARATION_TIPS)
+
+        # Add tips based on skill gaps
+        if skill_gaps:
+            tips.append(
+                f"Be prepared to discuss how you'd learn: {', '.join(skill_gaps[:3])}. "
+                "Show enthusiasm and a plan for filling these gaps."
+            )
+
+        # Add role-specific tips
+        if job_title:
+            title_lower = job_title.lower()
+            if "senior" in title_lower or "lead" in title_lower:
+                tips.append(
+                    "Prepare examples of technical leadership, mentoring, and architectural decisions"
+                )
+            if "manager" in title_lower:
+                tips.append(
+                    "Prepare examples of team building, performance management, and conflict resolution"
+                )
+
+        return tips[:10]  # Return top 10 tips
+
+    def _get_questions_to_ask(
+        self,
+        job_title: Optional[str] = None,
+    ) -> list[str]:
+        """Get questions candidate should ask the interviewer."""
+        questions = []
+
+        # Add one from each category
+        for category, q_list in self.QUESTIONS_TO_ASK.items():
+            questions.append(q_list[0])
+
+        # Add role-specific questions
+        if job_title:
+            title_lower = job_title.lower()
+            if "senior" in title_lower or "lead" in title_lower:
+                questions.append(
+                    "What's the balance between hands-on coding and technical leadership in this role?"
+                )
+            if "remote" in title_lower:
+                questions.append(
+                    "How does the team maintain collaboration and communication remotely?"
+                )
+
+        return questions[:6]  # Return top 6 questions

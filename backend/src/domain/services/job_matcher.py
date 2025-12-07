@@ -2,8 +2,8 @@
 
 from src.domain.entities.resume import Resume
 from src.domain.entities.job_posting import JobPosting
-from src.domain.entities.analysis_result import JobMatch, MatchLevel, SkillGap
-from src.domain.services.skill_relationships import expand_skills, normalize_skill
+from src.domain.entities.analysis_result import JobMatch, MatchLevel, SkillGap, RequirementMatch
+from src.domain.services.skill_relationships import expand_skills, normalize_skill, SKILL_RELATIONSHIPS
 
 
 class JobMatcher:
@@ -47,6 +47,9 @@ class JobMatcher:
                 strengths=best.strengths,
                 concerns=best.concerns,
                 is_best_fit=True,
+                requirement_matrix=best.requirement_matrix,
+                weighted_calculation=best.weighted_calculation,
+                transferable_skills=best.transferable_skills,
             )
 
         return matches
@@ -119,6 +122,32 @@ class JobMatcher:
             missing_required=missing_required,
         )
 
+        # Generate requirement matrix
+        requirement_matrix = self._generate_requirement_matrix(
+            resume=resume,
+            job=job,
+            expanded_resume_skills=expanded_resume_skills,
+            normalized_required=normalized_required,
+        )
+
+        # Generate weighted calculation explanation
+        weighted_calculation = self._generate_weighted_calculation(
+            required_match=required_match,
+            preferred_match=preferred_match,
+            exp_factor=exp_factor,
+            match_pct=match_pct,
+            matched_required_count=len(matched_required),
+            total_required=len(normalized_required),
+            matched_preferred_count=len(matched_preferred),
+            total_preferred=len(normalized_preferred),
+        )
+
+        # Identify transferable skills
+        transferable_skills = self._identify_transferable_skills(
+            resume_skills=normalized_resume,
+            job_skills=normalized_required | normalized_preferred,
+        )
+
         return JobMatch(
             job_id=job.id,
             job_title=job.title or "Unknown Position",
@@ -131,6 +160,9 @@ class JobMatcher:
             strengths=strengths,
             concerns=concerns,
             is_best_fit=False,
+            requirement_matrix=requirement_matrix,
+            weighted_calculation=weighted_calculation,
+            transferable_skills=transferable_skills,
         )
 
     def _get_match_level(self, percentage: float) -> MatchLevel:
@@ -289,3 +321,138 @@ class JobMatcher:
                 concerns.append("Less than 50% skill match with requirements")
 
         return concerns
+
+    def _generate_requirement_matrix(
+        self,
+        resume: Resume,
+        job: JobPosting,
+        expanded_resume_skills: set[str],
+        normalized_required: set[str],
+    ) -> list[RequirementMatch]:
+        """Generate detailed requirement-by-requirement match analysis."""
+        matrix = []
+
+        # Process each required skill as a requirement
+        for skill in sorted(normalized_required):
+            found = skill in expanded_resume_skills
+
+            # Find candidate's relevant experience
+            candidate_exp = self._find_candidate_experience(resume, skill)
+
+            # Calculate match percentage for this requirement
+            match_pct = 100 if found else 0
+
+            # If partially related through inference, give partial credit
+            if not found and skill in SKILL_RELATIONSHIPS:
+                related = SKILL_RELATIONSHIPS[skill]
+                if any(r in expanded_resume_skills for r in related):
+                    match_pct = 70
+                    candidate_exp = f"Has related skills: {', '.join(related[:2])}"
+
+            # Generate logic explanation
+            if match_pct == 100:
+                logic = f"Direct match found for '{skill}' in resume"
+            elif match_pct == 70:
+                logic = f"Partial match through related skills - may need learning curve"
+            else:
+                logic = f"'{skill}' not found in resume - skill gap identified"
+
+            matrix.append(RequirementMatch(
+                requirement=skill.title(),
+                candidate_experience=candidate_exp,
+                match_percentage=match_pct,
+                logic=logic,
+            ))
+
+        # Add experience requirement if applicable
+        if job.min_experience_years > 0:
+            exp_match = min(100, int((resume.total_experience_years / job.min_experience_years) * 100))
+            matrix.append(RequirementMatch(
+                requirement=f"{job.min_experience_years}+ years experience",
+                candidate_experience=f"{resume.total_experience_years:.0f} years total",
+                match_percentage=exp_match,
+                logic=f"Candidate has {resume.total_experience_years:.0f} of {job.min_experience_years} required years",
+            ))
+
+        return matrix
+
+    def _find_candidate_experience(self, resume: Resume, skill: str) -> str:
+        """Find candidate's experience relevant to a skill."""
+        skill_lower = skill.lower()
+
+        # Check if skill is in resume skills
+        for rs in resume.get_skill_names():
+            if skill_lower in rs.lower() or rs.lower() in skill_lower:
+                return f"Listed in skills: {rs}"
+
+        # Check in work experience descriptions
+        for exp in resume.experiences:
+            exp_text = f"{exp.company} {exp.title} {exp.description or ''}".lower()
+            if skill_lower in exp_text:
+                return f"Experience at {exp.company} as {exp.title}"
+
+        return "Not found in resume"
+
+    def _generate_weighted_calculation(
+        self,
+        required_match: float,
+        preferred_match: float,
+        exp_factor: float,
+        match_pct: float,
+        matched_required_count: int,
+        total_required: int,
+        matched_preferred_count: int,
+        total_preferred: int,
+    ) -> str:
+        """Generate human-readable weighted calculation explanation."""
+        lines = [
+            "Match Calculation Formula:",
+            "",
+            "Required Skills (70% weight):",
+            f"  - Matched: {matched_required_count}/{total_required}",
+            f"  - Score: {required_match:.2f} x 70 = {required_match * 70:.1f}",
+            "",
+            "Preferred Skills (20% weight):",
+            f"  - Matched: {matched_preferred_count}/{total_preferred}",
+            f"  - Score: {preferred_match:.2f} x 20 = {preferred_match * 20:.1f}",
+            "",
+            "Experience (10% weight):",
+            f"  - Factor: {exp_factor:.2f}",
+            f"  - Score: {exp_factor:.2f} x 10 = {exp_factor * 10:.1f}",
+            "",
+            f"TOTAL: {match_pct:.1f}%",
+        ]
+        return "\n".join(lines)
+
+    def _identify_transferable_skills(
+        self,
+        resume_skills: set[str],
+        job_skills: set[str],
+    ) -> list[str]:
+        """Identify skills that transfer well to the target role."""
+        transferable = []
+
+        for skill in resume_skills:
+            # Check if this skill has related skills that match job requirements
+            if skill in SKILL_RELATIONSHIPS:
+                related = set(SKILL_RELATIONSHIPS[skill])
+                matching_related = related & job_skills
+                if matching_related:
+                    transferable.append(
+                        f"{skill.title()} -> {', '.join(s.title() for s in list(matching_related)[:2])}"
+                    )
+
+        # Also identify general transferable skills based on categories
+        transferable_categories = {
+            "leadership": ["leadership", "management", "team lead", "mentoring"],
+            "communication": ["communication", "presentation", "documentation"],
+            "problem-solving": ["problem solving", "debugging", "troubleshooting", "analysis"],
+            "project management": ["project management", "agile", "scrum", "planning"],
+        }
+
+        for category, keywords in transferable_categories.items():
+            if any(kw in skill.lower() for skill in resume_skills for kw in keywords):
+                if any(kw in skill.lower() for skill in job_skills for kw in keywords):
+                    transferable.append(f"{category.title()} skills apply to this role")
+
+        return list(set(transferable))[:5]  # Return top 5 unique

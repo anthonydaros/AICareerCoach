@@ -118,8 +118,9 @@ class CareerCoachOrchestrator:
             best_match = job_matches[0]  # Already sorted by percentage
             best_fit = self._create_best_fit(best_match)
 
-        # 6. Detect seniority level
-        seniority = self.seniority_detector.detect(resume)
+        # 6. Detect seniority level (pass first job for job fit comparison)
+        first_job = jobs[0] if jobs else None
+        seniority = self.seniority_detector.detect(resume, first_job)
         logger.info(f"Detected seniority: {seniority.level.value} ({seniority.confidence}% confidence)")
 
         # 7. Analyze career stability
@@ -170,16 +171,27 @@ class CareerCoachOrchestrator:
             else:
                 skill_gaps = []
 
-        # Generate questions
-        questions = await self.interview_prep_uc.execute(
+        # Generate interview prep (now returns InterviewPrep entity)
+        interview_prep = await self.interview_prep_uc.execute(
             resume_summary=resume_summary,
             job_summary=job_summary,
             skill_gaps=skill_gaps,
+            job_title=job.get_display_title(),
         )
+
+        # Convert questions by category to DTO
+        questions_by_category_dto = {
+            cat: [self._question_to_dto(q) for q in qs]
+            for cat, qs in interview_prep.questions_by_category.items()
+        }
 
         return {
             "job_title": job.get_display_title(),
-            "questions": [self._question_to_dto(q) for q in questions],
+            "questions": [self._question_to_dto(q) for q in interview_prep.questions],
+            # Enhanced fields
+            "questions_by_category": questions_by_category_dto,
+            "preparation_tips": list(interview_prep.preparation_tips),
+            "questions_to_ask_interviewer": list(interview_prep.questions_to_ask_interviewer),
         }
 
     async def generate_coaching_tips(
@@ -223,15 +235,39 @@ class CareerCoachOrchestrator:
         resume_summary = self._get_resume_summary(resume)
         jobs_summary = "\n".join(j.get_display_title() for j in jobs)
 
-        # Generate tips
-        tips = await self.coaching_tips_uc.execute(
+        # Calculate ATS score and seniority for coaching context
+        ats_score = None
+        seniority_match = None
+        if jobs:
+            ats_result = self.calculate_ats_uc.execute(resume, jobs[0])
+            ats_score = ats_result.total_score
+            seniority = self.seniority_detector.detect(resume, jobs[0])
+            seniority_match = getattr(seniority, 'seniority_match', None)
+
+        # Generate coaching result (now returns CoachingResult entity)
+        coaching_result = await self.coaching_tips_uc.execute(
             resume_summary=resume_summary,
             jobs_summary=jobs_summary,
             match_results=match_results,
+            ats_score=ats_score,
+            seniority_match=seniority_match,
         )
 
         return {
-            "tips": [self._tip_to_dto(t) for t in tips],
+            "tips": [self._tip_to_dto(t) for t in coaching_result.tips],
+            # Enhanced fields
+            "gap_analysis": [
+                {
+                    "gap": g.gap,
+                    "impact": g.impact.value,
+                    "action": g.action,
+                    "priority": g.priority,
+                }
+                for g in coaching_result.gap_analysis
+            ],
+            "success_probability": coaching_result.success_probability,
+            "honest_recommendation": coaching_result.honest_recommendation,
+            "alternative_paths": list(coaching_result.alternative_paths),
         }
 
     def _get_resume_summary(self, resume) -> str:
@@ -305,6 +341,18 @@ class CareerCoachOrchestrator:
             "missing_keywords": list(result.missing_keywords),
             "format_issues": list(result.format_issues),
             "improvement_suggestions": list(result.improvement_suggestions),
+            # Enhanced fields
+            "keyword_analysis": [
+                {
+                    "keyword": ka.keyword,
+                    "found_in_resume": ka.found_in_resume,
+                    "weight": ka.weight.value,
+                    "observation": ka.observation,
+                }
+                for ka in result.keyword_analysis
+            ],
+            "score_calculation": result.score_calculation,
+            "methodology": result.methodology,
         }
 
     def _match_to_dto(self, match) -> dict[str, Any]:
@@ -329,17 +377,41 @@ class CareerCoachOrchestrator:
             "strengths": list(match.strengths),
             "concerns": list(match.concerns),
             "is_best_fit": match.is_best_fit,
+            # Enhanced fields
+            "requirement_matrix": [
+                {
+                    "requirement": rm.requirement,
+                    "candidate_experience": rm.candidate_experience,
+                    "match_percentage": rm.match_percentage,
+                    "logic": rm.logic,
+                }
+                for rm in match.requirement_matrix
+            ],
+            "weighted_calculation": match.weighted_calculation,
+            "transferable_skills": list(match.transferable_skills),
         }
 
     def _question_to_dto(self, q) -> dict[str, Any]:
         """Convert InterviewQuestion to DTO dict."""
-        return {
+        result = {
             "question": q.question,
             "category": q.category,
             "why_asked": q.why_asked,
             "what_to_say": list(q.what_to_say),
             "what_to_avoid": list(q.what_to_avoid),
+            # Enhanced fields
+            "your_angle": q.your_angle,
+            "star_guidance": None,
         }
+        # Add STAR guidance if present
+        if q.star_guidance:
+            result["star_guidance"] = {
+                "situation": q.star_guidance.situation,
+                "task": q.star_guidance.task,
+                "action": q.star_guidance.action,
+                "result": q.star_guidance.result,
+            }
+        return result
 
     def _tip_to_dto(self, t) -> dict[str, Any]:
         """Convert CoachingTip to DTO dict."""
@@ -353,7 +425,7 @@ class CareerCoachOrchestrator:
 
     def _seniority_to_dto(self, seniority) -> dict[str, Any]:
         """Convert SeniorityResult to DTO dict."""
-        return {
+        result = {
             "level": seniority.level.value,
             "confidence": seniority.confidence,
             "years_experience": seniority.years_experience,
@@ -366,7 +438,21 @@ class CareerCoachOrchestrator:
                 "impact": round(seniority.scores.get("impact", 0), 2),
             },
             "indicators": list(seniority.indicators),
+            # Enhanced fields
+            "axis_comparison": [
+                {
+                    "axis": ax.axis,
+                    "candidate_level": ax.candidate_level,
+                    "evidence": ax.evidence,
+                    "job_expected_level": ax.job_expected_level,
+                }
+                for ax in seniority.axis_comparison
+            ] if hasattr(seniority, 'axis_comparison') else [],
+            "job_fit_assessment": getattr(seniority, 'job_fit_assessment', ""),
+            "gap_analysis": getattr(seniority, 'gap_analysis', ""),
+            "seniority_match": getattr(seniority, 'seniority_match', ""),
         }
+        return result
 
     def _stability_to_dto(self, stability) -> dict[str, Any]:
         """Convert StabilityResult to DTO dict."""

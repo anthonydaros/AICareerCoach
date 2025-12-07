@@ -19,6 +19,9 @@ import type {
 // API base URL from environment or default
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+// API timeout in milliseconds (3 minutes for LLM operations)
+const API_TIMEOUT = 180000;
+
 /**
  * Custom error class for API errors.
  */
@@ -38,9 +41,14 @@ export class ApiClientError extends Error {
  */
 async function apiRequest<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  timeout: number = API_TIMEOUT
 ): Promise<T> {
   const url = `${API_BASE}${endpoint}`;
+
+  // Create abort controller for timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
 
   try {
     const response = await fetch(url, {
@@ -48,7 +56,10 @@ async function apiRequest<T>(
       headers: {
         ...options.headers,
       },
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       let errorMessage = `Request failed: ${response.statusText}`;
@@ -63,9 +74,20 @@ async function apiRequest<T>(
 
     return response.json();
   } catch (error) {
+    clearTimeout(timeoutId);
+
     if (error instanceof ApiClientError) {
       throw error;
     }
+
+    // Handle abort/timeout error
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new ApiClientError(
+        "Request timed out. The AI is processing your request, please try again.",
+        408
+      );
+    }
+
     throw new ApiClientError(
       error instanceof Error ? error.message : "Network error",
       0

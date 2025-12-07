@@ -10,9 +10,9 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
-    # OpenAI SDK Configuration (pointing to Ollama)
-    openai_base_url: str = "https://ollama.anthonymax.com/v1"
-    openai_api_key: str = "ollama"
+    # OpenAI SDK Configuration (pointing to Open WebUI / Ollama)
+    openai_base_url: str = "https://ollama.anthonymax.com/api"
+    openai_api_key: str = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjBkZDcyYjNlLWI3YzItNDJlYS1iMWJkLWQ0NTYzOGMyYjRlNSIsImp0aSI6ImFkZTM1M2NlLTY2ZjYtNGMxZi05MmRmLWYyNTg0YzM5YTYzMyJ9.0nabO1wscgN-uYmCwopLf1DiKbLBUfJZgk_MsITq4ic"
     openai_model: str = "granite4:7b-a1b-h"
     openai_embedding_model: str = "nomic-embed-text:latest"
     openai_temperature: float = 0.3
