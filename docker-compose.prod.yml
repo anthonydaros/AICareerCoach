@@ -11,8 +11,9 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile.prod
-    ports:
-      - "8000:8000"
+    # No host ports - Traefik handles external routing via coolify network
+    expose:
+      - "8000"
     environment:
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://ollama.anthonymax.com/v1}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -50,8 +51,9 @@ services:
       dockerfile: Dockerfile.prod
       args:
         - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
-    ports:
-      - "3000:3000"
+    # No host ports - Traefik handles external routing via coolify network
+    expose:
+      - "3000"
     environment:
       - NODE_ENV=production
     depends_on:
@@ -74,4 +76,5 @@ services:
 
 networks:
   default:
-    name: ai-career-coach
+    external: true
+    name: coolify
