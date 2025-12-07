@@ -4,10 +4,25 @@ import { useState } from "react";
 import { Upload, FileText, Check, Loader2, ScanLine, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export function ResumeUploader() {
+interface ResumeUploaderProps {
+    onUpload?: (file: File) => Promise<void>;
+    onClear?: () => void;
+    isUploading?: boolean;
+    uploadedFilename?: string | null;
+    error?: string | null;
+}
+
+export function ResumeUploader({
+    onUpload,
+    onClear,
+    isUploading = false,
+    uploadedFilename,
+    error,
+}: ResumeUploaderProps) {
     const [isDragActive, setIsDragActive] = useState(false);
     const [file, setFile] = useState<File | null>(null);
-    const [status, setStatus] = useState<"idle" | "uploading" | "done">("idle");
+
+    const status = isUploading ? "uploading" : uploadedFilename ? "done" : "idle";
 
     const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
@@ -17,16 +32,19 @@ export function ResumeUploader() {
         }
     };
 
-    const handleFile = (f: File) => {
+    const handleFile = async (f: File) => {
         setFile(f);
-        setStatus("uploading");
-        setTimeout(() => setStatus("done"), 1500);
+        if (onUpload) {
+            await onUpload(f);
+        }
     };
 
     const clearFile = (e: React.MouseEvent) => {
         e.stopPropagation();
         setFile(null);
-        setStatus("idle");
+        if (onClear) {
+            onClear();
+        }
     };
 
     return (

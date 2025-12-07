@@ -14,6 +14,7 @@ interface Job {
 
 export interface JobPostInputRef {
     addJob: () => void;
+    getJobs: () => Job[];
 }
 
 export const JobPostInput = forwardRef<JobPostInputRef>((props, ref) => {
@@ -25,7 +26,8 @@ export const JobPostInput = forwardRef<JobPostInputRef>((props, ref) => {
             const newId = Date.now().toString();
             setJobs(prev => [...prev, { id: newId, text: '' }]);
             setActiveId(newId);
-        }
+        },
+        getJobs: () => jobs.filter(j => j.text.trim().length > 0),
     }));
 
     const activeJob = jobs.find(j => j.id === activeId) || jobs[0];
