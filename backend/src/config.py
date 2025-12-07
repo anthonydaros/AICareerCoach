@@ -19,7 +19,6 @@ class Settings(BaseSettings):
     openai_temperature: float = 0.3
     openai_max_tokens: int = 4096
     openai_timeout: int = 120  # 2 min for cloud APIs
-    openai_fallback_model: str = "google/gemini-2.0-flash-exp:free"  # Fallback when primary fails
 
     # OpenRouter specific (optional - for rankings)
     openrouter_app_url: str = ""

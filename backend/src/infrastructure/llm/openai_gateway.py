@@ -47,7 +47,6 @@ class OpenAIGateway:
             default_headers=default_headers if default_headers else None,
         )
         self.model = settings.openai_model
-        self.fallback_model = settings.openai_fallback_model
         self.temperature = settings.openai_temperature
         self.max_tokens = settings.openai_max_tokens
 
@@ -249,16 +248,9 @@ class OpenAIGateway:
             self.model, messages, temperature, tokens
         )
 
-        # If primary failed/empty and fallback is configured, try fallback
-        if result is None and self.fallback_model and self.fallback_model != self.model:
-            logger.warning(f"Primary model ({self.model}) failed, trying fallback ({self.fallback_model})")
-            result = await self._try_chat_json_with_model(
-                self.fallback_model, messages, temperature, tokens
-            )
-
-        # If OpenRouter fallback also failed, try Google Gemini directly (bypasses rate limits)
+        # If primary failed/empty, try Google Gemini directly (more reliable than OpenRouter fallback)
         if result is None and self.gemini_api_key:
-            logger.warning("OpenRouter fallback failed, trying Google Gemini API directly")
+            logger.warning(f"Primary model ({self.model}) failed, trying Google Gemini directly")
             result = await self._try_gemini_json_response(messages, temperature, tokens)
 
         # Return result or empty structure
