@@ -15,6 +15,7 @@ interface Job {
 export interface JobPostInputRef {
     addJob: () => void;
     getJobs: () => Job[];
+    setJobs: (jobs: Job[]) => void;
 }
 
 export const JobPostInput = forwardRef<JobPostInputRef>((props, ref) => {
@@ -28,6 +29,12 @@ export const JobPostInput = forwardRef<JobPostInputRef>((props, ref) => {
             setActiveId(newId);
         },
         getJobs: () => jobs.filter(j => j.text.trim().length > 0),
+        setJobs: (newJobs: Job[]) => {
+            if (newJobs.length > 0) {
+                setJobs(newJobs);
+                setActiveId(newJobs[0].id);
+            }
+        },
     }));
 
     const activeJob = jobs.find(j => j.id === activeId) || jobs[0];
@@ -70,13 +77,17 @@ export const JobPostInput = forwardRef<JobPostInputRef>((props, ref) => {
     const SCALE_FACTOR = 0.06;
 
     return (
-        <div className="h-full flex flex-col relative group">
+        <div className="h-full flex flex-col relative group" role="region" aria-label="Job postings input area">
+            {/* Screen reader announcements */}
+            <div className="sr-only" aria-live="polite" aria-atomic="true" id="job-announcements">
+                {jobs.length} job posting{jobs.length !== 1 ? 's' : ''} in stack
+            </div>
 
             {/* STACK STATUS - Button moved to parent */}
             <div className="flex items-center justify-end mb-2 px-1 z-50 relative h-6">
                 {/* Only showing count if multiple, largely decorative now */}
                 {jobs.length > 1 && (
-                    <span className="text-[10px] font-mono text-neon-cyan/60 uppercase tracking-widest bg-black/50 px-2 py-1 rounded border border-white/10">
+                    <span className="text-[10px] font-mono text-neon-cyan/60 uppercase tracking-widest bg-black/50 px-2 py-1 rounded border border-white/10" aria-hidden="true">
                         Stack_Depth: {jobs.length}
                     </span>
                 )}
@@ -126,9 +137,10 @@ export const JobPostInput = forwardRef<JobPostInputRef>((props, ref) => {
                                     {index === 0 && (
                                         <button
                                             onClick={(e) => removeJob(e, job.id)}
-                                            className="hover:text-red-500 text-muted-foreground transition-colors p-1"
+                                            aria-label={`Remove job posting ${jobs.findIndex(j => j.id === job.id) + 1}`}
+                                            className="hover:text-red-500 text-muted-foreground transition-colors p-1 focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
                                         >
-                                            <X className="h-3 w-3" />
+                                            <X className="h-3 w-3" aria-hidden="true" />
                                         </button>
                                     )}
                                 </div>
@@ -136,17 +148,26 @@ export const JobPostInput = forwardRef<JobPostInputRef>((props, ref) => {
                                 {/* Editor Area - Only interactive if index 0 */}
                                 <div className="absolute inset-0 top-9 p-4 bg-transparent">
                                     <textarea
+                                        id={`job-textarea-${job.id}`}
                                         value={job.text}
                                         onChange={(e) => updateJob(job.id, e.target.value)}
                                         disabled={index !== 0}
+                                        aria-label={`Job posting ${jobs.findIndex(j => j.id === job.id) + 1} description`}
+                                        aria-describedby={index === 0 ? "job-input-instructions" : undefined}
                                         className={cn(
                                             "w-full h-full bg-transparent resize-none outline-none font-mono text-sm leading-relaxed",
                                             "placeholder:text-muted-foreground/30 selection:bg-neon-cyan/30",
+                                            "focus:ring-2 focus:ring-neon-cyan/50 focus:ring-inset rounded",
                                             index !== 0 ? "pointer-events-none text-muted-foreground/50" : "text-white"
                                         )}
                                         placeholder={index === 0 ? "> PASTE JOB MISSION DATA..." : ""}
                                         spellCheck={false}
                                     />
+                                    {index === 0 && (
+                                        <p id="job-input-instructions" className="sr-only">
+                                            Paste or type the job posting description here. You can add multiple job postings using the New Intel button.
+                                        </p>
+                                    )}
                                 </div>
 
                                 {/* Active Card Controls */}
@@ -160,18 +181,20 @@ export const JobPostInput = forwardRef<JobPostInputRef>((props, ref) => {
                                             variant="outline"
                                             size="sm"
                                             onClick={() => updateJob(job.id, '')}
+                                            aria-label="Clear job posting text"
                                             className="h-7 border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500 hover:text-red-500 text-[10px] font-mono uppercase tracking-wider"
                                         >
-                                            <Trash2 className="h-3 w-3 mr-1" />
+                                            <Trash2 className="h-3 w-3 mr-1" aria-hidden="true" />
                                             Clear
                                         </Button>
                                         <Button
                                             variant="default"
                                             size="sm"
                                             onClick={handlePaste}
+                                            aria-label="Paste job posting from clipboard"
                                             className="h-7 bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/50 hover:bg-neon-cyan hover:text-black text-[10px] font-mono uppercase tracking-wider shadow-[0_0_10px_rgba(0,243,255,0.2)]"
                                         >
-                                            <ClipboardPaste className="h-3 w-3 mr-1" />
+                                            <ClipboardPaste className="h-3 w-3 mr-1" aria-hidden="true" />
                                             Paste
                                         </Button>
                                     </motion.div>

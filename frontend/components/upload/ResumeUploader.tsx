@@ -47,11 +47,29 @@ export function ResumeUploader({
         }
     };
 
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            document.getElementById('resume-upload-input')?.click();
+        }
+    };
+
     return (
         <div className="font-sans h-full">
+            {/* Hidden instructions for screen readers */}
+            <p id="resume-upload-instructions" className="sr-only">
+                Upload your resume in PDF, DOCX, or TXT format. You can drag and drop a file or click to browse.
+            </p>
+
             <div
+                role="button"
+                tabIndex={0}
+                aria-label={file ? `Resume uploaded: ${file.name}` : "Upload resume"}
+                aria-describedby="resume-upload-instructions"
+                aria-busy={isUploading}
                 className={cn(
                     "relative h-full min-h-[120px] border-2 border-dashed transition-all duration-300 rounded-lg flex flex-col items-center justify-center p-6 cursor-pointer group overflow-hidden",
+                    "focus:outline-none focus:ring-2 focus:ring-neon-pink focus:ring-offset-2 focus:ring-offset-background",
                     isDragActive
                         ? "border-neon-pink bg-neon-pink/10 shadow-[inset_0_0_30px_rgba(188,19,254,0.3)]"
                         : "border-white/10 hover:border-neon-pink/50 hover:bg-white/5",
@@ -61,10 +79,13 @@ export function ResumeUploader({
                 onDragLeave={() => setIsDragActive(false)}
                 onDrop={handleDrop}
                 onClick={() => document.getElementById('resume-upload-input')?.click()}
+                onKeyDown={handleKeyDown}
             >
                 <input
                     id="resume-upload-input"
                     type="file"
+                    accept=".pdf,.docx,.doc,.txt"
+                    aria-label="Choose resume file"
                     className="hidden"
                     onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
                 />
@@ -101,20 +122,21 @@ export function ResumeUploader({
                             </div>
                             <button
                                 onClick={clearFile}
-                                className="p-1.5 hover:bg-red-500/20 rounded-full text-muted-foreground hover:text-red-500 transition-colors"
+                                aria-label="Remove uploaded resume"
+                                className="p-1.5 hover:bg-red-500/20 rounded-full text-muted-foreground hover:text-red-500 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
                             >
-                                <X className="h-4 w-4" />
+                                <X className="h-4 w-4" aria-hidden="true" />
                             </button>
                         </div>
 
                         {/* Status Bar */}
-                        <div className="space-y-1">
+                        <div className="space-y-1" role="progressbar" aria-valuenow={status === 'done' ? 100 : 60} aria-valuemin={0} aria-valuemax={100} aria-label="Upload progress">
                             <div className="h-1 w-full bg-gray-800 rounded-full overflow-hidden">
                                 <div
                                     className={cn("h-full bg-neon-pink transition-all duration-1000 ease-out", status === 'done' ? "w-full" : "w-[60%] animate-pulse")}
                                 />
                             </div>
-                            <div className="flex justify-between text-[10px] font-mono text-neon-pink/80 uppercase">
+                            <div className="flex justify-between text-[10px] font-mono text-neon-pink/80 uppercase" aria-live="polite">
                                 <span>{status === 'done' ? 'UPLOAD COMPLETE' : 'UPLOADING...'}</span>
                                 <span>{status === 'done' ? '100%' : '60%'}</span>
                             </div>

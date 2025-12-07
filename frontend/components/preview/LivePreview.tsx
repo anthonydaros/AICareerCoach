@@ -41,13 +41,13 @@ export function LivePreview({ status, result, error }: LivePreviewProps) {
     );
 
     const renderLoadingState = () => (
-        <div className="flex flex-col items-center justify-center h-full gap-4">
-            <Loader2 className="h-12 w-12 text-neon-cyan animate-spin" />
+        <div className="flex flex-col items-center justify-center h-full gap-4" role="status" aria-label={status === "uploading" ? "Uploading resume" : "Analyzing data"}>
+            <Loader2 className="h-12 w-12 text-neon-cyan animate-spin" aria-hidden="true" />
             <div className="text-center">
                 <p className="text-neon-cyan font-display font-bold tracking-widest uppercase">
                     {status === "uploading" ? "UPLOADING RESUME..." : "ANALYZING DATA..."}
                 </p>
-                <p className="text-[10px] text-muted-foreground font-mono mt-2">
+                <p className="text-[10px] text-muted-foreground font-mono mt-2" aria-hidden="true">
                     {status === "uploading"
                         ? "// Extracting text content"
                         : "// Processing with AI engine"}
@@ -57,8 +57,8 @@ export function LivePreview({ status, result, error }: LivePreviewProps) {
     );
 
     const renderErrorState = () => (
-        <div className="flex flex-col items-center justify-center h-full gap-4">
-            <AlertCircle className="h-12 w-12 text-red-500" />
+        <div className="flex flex-col items-center justify-center h-full gap-4" role="alert" aria-live="assertive">
+            <AlertCircle className="h-12 w-12 text-red-500" aria-hidden="true" />
             <div className="text-center">
                 <p className="text-red-500 font-display font-bold tracking-widest uppercase">
                     ERROR DETECTED
@@ -94,10 +94,10 @@ export function LivePreview({ status, result, error }: LivePreviewProps) {
         return (
             <div className="space-y-6">
                 {/* ATS Score Section */}
-                <div className="space-y-2">
+                <section className="space-y-2" aria-labelledby="ats-heading">
                     <div className="flex items-center gap-2 text-neon-pink">
-                        <Target className="h-4 w-4" />
-                        <span className="font-display font-bold tracking-wider uppercase text-xs">ATS COMPATIBILITY</span>
+                        <Target className="h-4 w-4" aria-hidden="true" />
+                        <h3 id="ats-heading" className="font-display font-bold tracking-wider uppercase text-xs">ATS COMPATIBILITY</h3>
                     </div>
                     <div className="bg-black/40 rounded-lg p-4 border border-neon-pink/20">
                         <div className="flex items-baseline gap-2 mb-3">
@@ -125,13 +125,13 @@ export function LivePreview({ status, result, error }: LivePreviewProps) {
                             </div>
                         </div>
                     </div>
-                </div>
+                </section>
 
                 {/* Best Fit Banner */}
                 {best_fit && (
-                    <div className="bg-neon-green/10 border border-neon-green/30 rounded-lg p-3">
+                    <div className="bg-neon-green/10 border border-neon-green/30 rounded-lg p-3" role="status" aria-label="Best job match found">
                         <div className="flex items-center gap-2 mb-2">
-                            <CheckCircle2 className="h-4 w-4 text-neon-green" />
+                            <CheckCircle2 className="h-4 w-4 text-neon-green" aria-hidden="true" />
                             <span className="text-neon-green font-display font-bold text-xs uppercase tracking-wider">Best Match Found</span>
                         </div>
                         <p className="text-white font-bold">{best_fit.job_title}</p>
@@ -140,25 +140,26 @@ export function LivePreview({ status, result, error }: LivePreviewProps) {
                 )}
 
                 {/* Job Matches */}
-                <div className="space-y-2">
+                <section className="space-y-2" aria-labelledby="matches-heading">
                     <div className="flex items-center gap-2 text-neon-cyan">
-                        <TrendingUp className="h-4 w-4" />
-                        <span className="font-display font-bold tracking-wider uppercase text-xs">JOB MATCHES</span>
+                        <TrendingUp className="h-4 w-4" aria-hidden="true" />
+                        <h3 id="matches-heading" className="font-display font-bold tracking-wider uppercase text-xs">JOB MATCHES</h3>
                     </div>
-                    <div className="space-y-2">
+                    <ul className="space-y-2" aria-label="Job match results">
                         {job_matches.map((match) => (
-                            <div
+                            <li
                                 key={match.job_id}
                                 className={cn(
-                                    "bg-black/40 rounded-lg p-3 border",
+                                    "bg-black/40 rounded-lg p-3 border list-none",
                                     match.is_best_fit ? "border-neon-green/30" : "border-white/10"
                                 )}
+                                aria-label={`${match.job_title}: ${match.match_percentage}% match`}
                             >
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-white font-bold text-sm truncate max-w-[200px]">
                                         {match.job_title}
                                     </span>
-                                    <span className={cn("font-mono font-bold", getMatchLevelColor(match.match_level))}>
+                                    <span className={cn("font-mono font-bold", getMatchLevelColor(match.match_level))} aria-label={`Match score: ${match.match_percentage} percent`}>
                                         {match.match_percentage}%
                                     </span>
                                 </div>
@@ -166,7 +167,7 @@ export function LivePreview({ status, result, error }: LivePreviewProps) {
                                     <p className="text-[10px] text-muted-foreground font-mono mb-2">{match.company}</p>
                                 )}
                                 {match.matched_skills.length > 0 && (
-                                    <div className="flex flex-wrap gap-1 mb-2">
+                                    <div className="flex flex-wrap gap-1 mb-2" aria-label={`Matched skills: ${match.matched_skills.join(', ')}`}>
                                         {match.matched_skills.slice(0, 5).map((skill) => (
                                             <span
                                                 key={skill}
@@ -183,7 +184,7 @@ export function LivePreview({ status, result, error }: LivePreviewProps) {
                                     </div>
                                 )}
                                 {match.missing_skills.length > 0 && (
-                                    <div className="flex flex-wrap gap-1">
+                                    <div className="flex flex-wrap gap-1" aria-label={`Missing skills: ${match.missing_skills.join(', ')}`}>
                                         {match.missing_skills.slice(0, 3).map((skill) => (
                                             <span
                                                 key={skill}
@@ -199,24 +200,24 @@ export function LivePreview({ status, result, error }: LivePreviewProps) {
                                         )}
                                     </div>
                                 )}
-                            </div>
+                            </li>
                         ))}
-                    </div>
-                </div>
+                    </ul>
+                </section>
 
                 {/* Improvement Suggestions */}
                 {ats_result.improvement_suggestions.length > 0 && (
-                    <div className="space-y-2">
-                        <span className="text-neon-yellow font-display font-bold tracking-wider uppercase text-xs">RECOMMENDATIONS</span>
-                        <ul className="space-y-1 text-[11px] font-mono text-muted-foreground">
+                    <section className="space-y-2" aria-labelledby="recommendations-heading">
+                        <h3 id="recommendations-heading" className="text-neon-yellow font-display font-bold tracking-wider uppercase text-xs">RECOMMENDATIONS</h3>
+                        <ul className="space-y-1 text-[11px] font-mono text-muted-foreground" aria-label="Improvement recommendations">
                             {ats_result.improvement_suggestions.slice(0, 5).map((suggestion, idx) => (
                                 <li key={idx} className="flex items-start gap-2">
-                                    <span className="text-neon-yellow">{">"}</span>
+                                    <span className="text-neon-yellow" aria-hidden="true">{">"}</span>
                                     <span>{suggestion}</span>
                                 </li>
                             ))}
                         </ul>
-                    </div>
+                    </section>
                 )}
             </div>
         );
@@ -229,25 +230,51 @@ export function LivePreview({ status, result, error }: LivePreviewProps) {
         return renderIdleState();
     };
 
+    const isLoading = status === "uploading" || status === "analyzing";
+
+    const getStatusMessage = () => {
+        if (status === "error") return "Analysis error occurred";
+        if (status === "uploading") return "Uploading resume";
+        if (status === "analyzing") return "Analyzing data";
+        if (status === "done") return "Analysis complete";
+        return "Awaiting input";
+    };
+
     return (
-        <div className="h-full flex flex-col font-mono text-sm bg-background/40 backdrop-blur border-l border-border/40">
+        <div
+            className="h-full flex flex-col font-mono text-sm bg-background/40 backdrop-blur border-l border-border/40"
+            role="region"
+            aria-label="Analysis results"
+            aria-busy={isLoading}
+        >
+            {/* Screen reader status announcements */}
+            <div className="sr-only" aria-live="polite" aria-atomic="true">
+                {getStatusMessage()}
+            </div>
+
             <div className="flex items-center justify-between border-b border-border/40 px-4 py-3 bg-muted/10">
                 <div className="flex items-center gap-2">
-                    <Activity className={cn(
-                        "h-4 w-4",
-                        status === "analyzing" || status === "uploading"
-                            ? "text-neon-cyan animate-pulse"
-                            : status === "done"
-                                ? "text-neon-green"
-                                : "text-neon-pink animate-pulse"
-                    )} />
+                    <Activity
+                        className={cn(
+                            "h-4 w-4",
+                            isLoading
+                                ? "text-neon-cyan animate-pulse"
+                                : status === "done"
+                                    ? "text-neon-green"
+                                    : "text-neon-pink animate-pulse"
+                        )}
+                        aria-hidden="true"
+                    />
                     <span className="font-display font-bold tracking-wide text-foreground">LIVE OUTPUT STREAM</span>
                 </div>
-                <div className="flex items-center gap-2 text-[10px] text-muted-foreground uppercase">
-                    <div className={cn(
-                        "h-1.5 w-1.5 rounded-full",
-                        status === "error" ? "bg-red-500" : "bg-neon-green/80"
-                    )} />
+                <div className="flex items-center gap-2 text-[10px] text-muted-foreground uppercase" role="status" aria-live="polite">
+                    <div
+                        className={cn(
+                            "h-1.5 w-1.5 rounded-full",
+                            status === "error" ? "bg-red-500" : "bg-neon-green/80"
+                        )}
+                        aria-hidden="true"
+                    />
                     <span>{status === "error" ? "Error" : "Connected"}</span>
                 </div>
             </div>
@@ -256,7 +283,7 @@ export function LivePreview({ status, result, error }: LivePreviewProps) {
                 {renderContent()}
 
                 {/* Scanline Effect Overlay */}
-                <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.03),rgba(0,255,0,0.01),rgba(0,0,255,0.03))] z-50 bg-[length:100%_2px,3px_100%] opacity-20 user-select-none" />
+                <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.03),rgba(0,255,0,0.01),rgba(0,0,255,0.03))] z-50 bg-[length:100%_2px,3px_100%] opacity-20 user-select-none" aria-hidden="true" />
             </div>
         </div>
     );

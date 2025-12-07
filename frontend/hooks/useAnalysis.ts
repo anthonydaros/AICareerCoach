@@ -98,10 +98,14 @@ export function useAnalysis() {
 
   /**
    * Run the full analysis.
+   * @param jobs - Array of job postings to analyze
+   * @param overrideResumeText - Optional resume text to use instead of state (for demo mode)
    */
   const runAnalysis = useCallback(
-    async (jobs: Job[]): Promise<AnalyzeResponse | null> => {
-      if (!state.resumeText) {
+    async (jobs: Job[], overrideResumeText?: string): Promise<AnalyzeResponse | null> => {
+      const resumeText = overrideResumeText || state.resumeText;
+
+      if (!resumeText) {
         setError("Please upload a resume first");
         return null;
       }
@@ -115,7 +119,7 @@ export function useAnalysis() {
 
       try {
         const result = await analyzeCareer({
-          resume_text: state.resumeText,
+          resume_text: resumeText,
           job_postings: jobs.map((j) => ({ id: j.id, text: j.text })),
         });
 
@@ -219,6 +223,19 @@ export function useAnalysis() {
   );
 
   /**
+   * Load demo data directly into state.
+   */
+  const loadDemoData = useCallback((resumeText: string, filename: string = "demo_resume.txt") => {
+    setState((prev) => ({
+      ...prev,
+      status: "idle",
+      resumeText,
+      resumeFilename: filename,
+      error: null,
+    }));
+  }, []);
+
+  /**
    * Reset all state.
    */
   const reset = useCallback(() => {
@@ -244,6 +261,7 @@ export function useAnalysis() {
     // Actions
     handleFileUpload,
     setResumeText,
+    loadDemoData,
     runAnalysis,
     getInterviewPrep,
     getCoachingTips,

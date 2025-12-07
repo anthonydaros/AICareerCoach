@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useCallback } from "react";
 import { Header } from "@/components/layout/Header";
 import { ResumeUploader } from "@/components/upload/ResumeUploader";
 import { JobPostInput, JobPostInputRef } from "@/components/input/JobPostInput";
@@ -8,6 +8,7 @@ import { LivePreview } from "@/components/preview/LivePreview";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2 } from "lucide-react";
 import { useAnalysis } from "@/hooks/useAnalysis";
+import { DEMO_RESUME, DEMO_JOBS } from "@/lib/demo-data";
 
 export default function Dashboard() {
   const jobInputRef = useRef<JobPostInputRef>(null);
@@ -19,6 +20,7 @@ export default function Dashboard() {
     hasResume,
     isLoading,
     handleFileUpload,
+    loadDemoData,
     runAnalysis,
     reset,
   } = useAnalysis();
@@ -40,13 +42,24 @@ export default function Dashboard() {
     await runAnalysis(jobs);
   };
 
+  const handleLoadDemo = useCallback(async () => {
+    // Load demo resume into state (for display purposes)
+    loadDemoData(DEMO_RESUME, "john_doe_resume.txt");
+
+    // Load demo jobs into the job input component
+    jobInputRef.current?.setJobs(DEMO_JOBS);
+
+    // Run analysis with demo data passed directly (avoids state timing issues)
+    await runAnalysis(DEMO_JOBS, DEMO_RESUME);
+  }, [loadDemoData, runAnalysis]);
+
   const canInitiate = hasResume && !isLoading;
 
   return (
     <div className="min-h-screen bg-deep-bg flex flex-col font-sans selection:bg-neon-pink/30 relative overflow-x-hidden">
 
-      {/* HUD Borders / Overlay */}
-      <div className="fixed inset-0 pointer-events-none z-50">
+      {/* HUD Borders / Overlay - Decorative */}
+      <div className="fixed inset-0 pointer-events-none z-50" aria-hidden="true">
         <div className="absolute top-0 left-0 w-8 h-8 border-l-2 border-t-2 border-neon-cyan/50 rounded-tl-lg" />
         <div className="absolute top-0 right-0 w-8 h-8 border-r-2 border-t-2 border-neon-cyan/50 rounded-tr-lg" />
         <div className="absolute bottom-0 left-0 w-8 h-8 border-l-2 border-b-2 border-neon-cyan/50 rounded-bl-lg" />
@@ -56,12 +69,12 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <Header />
+      <Header onLoadDemo={handleLoadDemo} />
 
-      <main className="flex-1 flex flex-col lg:flex-row relative z-10 p-4 lg:p-8 gap-8 max-w-[1600px] mx-auto w-full">
+      <main id="main-content" className="flex-1 flex flex-col lg:flex-row relative z-10 p-4 lg:p-8 gap-8 max-w-[1600px] mx-auto w-full" tabIndex={-1}>
 
         {/* LEFT PANEL: MISSIONS */}
-        <section className="flex-1 flex flex-col gap-6 lg:gap-8">
+        <section className="flex-1 flex flex-col gap-6 lg:gap-8" aria-label="Input section">
 
           {/* STEP 1: MISSION INTEL */}
           <div className="relative group">
@@ -118,34 +131,36 @@ export default function Dashboard() {
         </section>
 
         {/* RIGHT PANEL: EXECUTION & STATUS */}
-        <section className="lg:w-[450px] flex flex-col gap-6">
+        <section className="lg:w-[450px] flex flex-col gap-6" aria-label="Analysis and results">
 
           {/* EXECUTE BUTTON */}
           <div className="relative group cursor-pointer active:scale-95 transition-transform duration-100">
-            <div className={`absolute inset-0 ${canInitiate ? 'bg-neon-cyan' : 'bg-gray-500'} blur-[20px] opacity-20 group-hover:opacity-40 ${!isLoading && 'animate-pulse'} transition-opacity`} />
+            <div className={`absolute inset-0 ${canInitiate ? 'bg-neon-cyan' : 'bg-gray-500'} blur-[20px] opacity-20 group-hover:opacity-40 ${!isLoading && 'animate-pulse'} transition-opacity`} aria-hidden="true" />
             <button
               onClick={handleInitiate}
               disabled={!canInitiate}
+              aria-label={isLoading ? (status === "uploading" ? "Uploading resume" : "Analyzing data") : "Start analysis"}
+              aria-busy={isLoading}
               className={`relative w-full overflow-hidden bg-background border-2 ${
                 canInitiate
                   ? 'border-neon-cyan text-neon-cyan hover:bg-neon-cyan hover:text-black'
                   : 'border-gray-600 text-gray-500 cursor-not-allowed'
-              } transition-all duration-300 p-8 clip-path-polygon group`}
+              } transition-all duration-300 p-8 clip-path-polygon group focus:outline-none focus:ring-2 focus:ring-neon-cyan focus:ring-offset-2 focus:ring-offset-background`}
             >
               {/* Tech markings */}
-              <div className="absolute top-0 right-0 p-2 text-[10px] font-mono opacity-50">EXE_001</div>
-              <div className="absolute bottom-0 left-0 p-2 text-[10px] font-mono opacity-50">
+              <div className="absolute top-0 right-0 p-2 text-[10px] font-mono opacity-50" aria-hidden="true">EXE_001</div>
+              <div className="absolute bottom-0 left-0 p-2 text-[10px] font-mono opacity-50" aria-hidden="true">
                 {hasResume ? 'READY' : 'AWAITING_DATA'}
               </div>
 
               <div className="flex flex-col items-center gap-2 relative z-10">
                 {isLoading ? (
                   <>
-                    <Loader2 className="h-8 w-8 animate-spin" />
+                    <Loader2 className="h-8 w-8 animate-spin" aria-hidden="true" />
                     <span className="text-xl font-display font-black tracking-[0.2em] uppercase">
                       PROCESSING
                     </span>
-                    <span className="text-sm font-mono tracking-widest opacity-80">
+                    <span className="text-sm font-mono tracking-widest opacity-80" aria-hidden="true">
                       {status === "uploading" ? "UPLOADING_RESUME" : "ANALYZING_DATA"}
                     </span>
                   </>
@@ -154,7 +169,7 @@ export default function Dashboard() {
                     <span className="text-3xl font-display font-black tracking-[0.2em] uppercase group-hover:drop-shadow-[0_0_10px_rgba(0,0,0,0.5)]">
                       INITIATE
                     </span>
-                    <span className="text-sm font-mono tracking-widest opacity-80 group-hover:opacity-100">RUN_ANALYSIS_PROTOCOL</span>
+                    <span className="text-sm font-mono tracking-widest opacity-80 group-hover:opacity-100" aria-hidden="true">RUN_ANALYSIS_PROTOCOL</span>
                   </>
                 )}
               </div>
