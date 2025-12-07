@@ -506,6 +506,129 @@ SKILL_RELATIONSHIPS: Dict[str, List[str]] = {
         "model training", "machine learning", "llm", "hugging face",
         "pytorch", "transfer learning",
     ],
+
+    # =========================================
+    # EXPANDED AI/LLM TOOLS
+    # =========================================
+
+    "autogen": [
+        "multi-agent systems", "microsoft", "llm", "agents",
+        "conversational ai", "python", "ai orchestration",
+    ],
+    "dspy": [
+        "llm programming", "prompt optimization", "python",
+        "machine learning", "llm", "stanford",
+    ],
+    "guidance": [
+        "llm control", "constrained generation", "microsoft",
+        "python", "llm", "structured output",
+    ],
+    "instructor": [
+        "structured output", "pydantic", "llm", "python",
+        "function calling", "json schema",
+    ],
+    "litellm": [
+        "llm gateway", "api proxy", "openai", "anthropic",
+        "unified api", "python", "llm",
+    ],
+    "vllm": [
+        "llm inference", "high throughput", "serving", "gpu",
+        "llm", "deployment", "python",
+    ],
+    "text-generation-inference": [
+        "llm serving", "hugging face", "deployment", "gpu",
+        "llm", "inference", "tgi",
+    ],
+    "mlflow": [
+        "experiment tracking", "model registry", "mlops",
+        "machine learning", "model deployment",
+    ],
+    "weights & biases": [
+        "experiment tracking", "mlops", "visualization",
+        "machine learning", "model monitoring", "wandb",
+    ],
+    "modal": [
+        "serverless gpu", "python", "deployment", "inference",
+        "machine learning", "cloud",
+    ],
+
+    # =========================================
+    # PRODUCT & ANALYTICS EXPANDED
+    # =========================================
+
+    "amplitude": [
+        "product analytics", "user behavior", "cohort analysis",
+        "funnels", "retention", "analytics",
+    ],
+    "mixpanel": [
+        "product analytics", "event tracking", "user flows",
+        "retention analysis", "analytics",
+    ],
+    "segment": [
+        "customer data platform", "data collection", "integrations",
+        "analytics", "cdp",
+    ],
+    "heap": [
+        "auto-capture analytics", "product analytics", "user behavior",
+        "retroactive analysis", "analytics",
+    ],
+    "hotjar": [
+        "heatmaps", "session recordings", "user research",
+        "feedback", "ux research",
+    ],
+    "fullstory": [
+        "session replay", "digital experience", "user behavior",
+        "analytics", "ux research",
+    ],
+    "google analytics": [
+        "web analytics", "ga4", "user behavior", "reporting",
+        "marketing analytics", "analytics",
+    ],
+    "snowflake": [
+        "data warehouse", "cloud data", "sql", "data engineering",
+        "analytics", "data lake",
+    ],
+    "databricks": [
+        "data engineering", "spark", "delta lake", "machine learning",
+        "analytics", "mlops",
+    ],
+    "dbt": [
+        "data transformation", "sql", "analytics engineering",
+        "data modeling", "elt", "data engineering",
+    ],
+    "fivetran": [
+        "data integration", "etl", "connectors", "data engineering",
+        "data pipeline",
+    ],
+    "airbyte": [
+        "data integration", "open source", "etl", "connectors",
+        "data engineering", "elt",
+    ],
+
+    # =========================================
+    # MOBILE DEVELOPMENT EXPANDED
+    # =========================================
+
+    "swift": [
+        "ios", "swiftui", "uikit", "xcode", "apple",
+        "mobile development", "macos",
+    ],
+    "kotlin": [
+        "android", "jetpack compose", "android studio",
+        "mobile development", "jvm",
+    ],
+    "react native": [
+        "javascript", "mobile development", "ios", "android",
+        "cross-platform", "expo", "react",
+    ],
+    "flutter": [
+        "dart", "mobile development", "ios", "android",
+        "cross-platform", "google",
+    ],
+    "expo": [
+        "react native", "mobile development", "cross-platform",
+        "javascript", "eas",
+    ],
 }
 
 # Aliases for skills (alternative names for the same skill)
@@ -609,6 +732,62 @@ SKILL_ALIASES: Dict[str, str] = {
     "vector db": "vector databases",
     "vectordb": "vector databases",
     "retrieval augmented generation": "rag",
+
+    # Additional AI/ML aliases
+    "ag2": "autogen",
+    "autogen studio": "autogen",
+    "w&b": "weights & biases",
+    "wandb": "weights & biases",
+    "tgi": "text-generation-inference",
+    "llama.cpp": "local llms",
+    "llamacpp": "local llms",
+
+    # Analytics aliases
+    "ga": "google analytics",
+    "ga4": "google analytics",
+    "data build tool": "dbt",
+
+    # Mobile aliases
+    "rn": "react native",
+    "swiftui": "swift",
+    "jetpack": "kotlin",
+    "jetpack compose": "kotlin",
+}
+
+# Transferable skills matrix - maps skills that can transfer to other roles
+TRANSFERABLE_SKILLS: Dict[str, List[str]] = {
+    # From backend to related areas
+    "python": ["data science", "machine learning", "automation", "scripting"],
+    "java": ["android", "enterprise", "microservices"],
+    "javascript": ["frontend", "full stack", "react native"],
+
+    # From data to related areas
+    "sql": ["data analysis", "business intelligence", "data engineering"],
+    "pandas": ["data analysis", "data science", "automation"],
+    "excel": ["data analysis", "business intelligence", "reporting"],
+
+    # From DevOps to related areas
+    "docker": ["kubernetes", "devops", "cloud", "sre"],
+    "terraform": ["cloud", "infrastructure", "devops"],
+    "aws": ["cloud architecture", "solutions architecture", "devops"],
+
+    # From ML to related areas
+    "machine learning": ["data science", "ai engineering", "mlops"],
+    "pytorch": ["deep learning", "research", "computer vision", "nlp"],
+    "langchain": ["ai engineering", "rag", "llm applications"],
+
+    # From management to related areas
+    "project management": ["product management", "scrum master", "team lead"],
+    "agile": ["scrum master", "product owner", "project management"],
+    "leadership": ["management", "tech lead", "director"],
+
+    # From QA to related areas
+    "test automation": ["sdet", "devops", "software engineering"],
+    "selenium": ["test automation", "web scraping", "automation"],
+
+    # From design to related areas
+    "figma": ["product design", "ux design", "ui design"],
+    "ux design": ["product design", "user research", "product management"],
 }
 
 
@@ -657,3 +836,80 @@ def get_skill_category(skill: str) -> Optional[str]:
             return category
 
     return None
+
+
+def get_transferable_skills(skills: Set[str]) -> Dict[str, List[str]]:
+    """
+    Get transferable skills and potential career paths based on current skills.
+
+    Args:
+        skills: Set of skill names from resume
+
+    Returns:
+        Dict mapping each skill to potential career areas it transfers to
+    """
+    result = {}
+
+    for skill in skills:
+        normalized = normalize_skill(skill)
+        if normalized in TRANSFERABLE_SKILLS:
+            result[normalized] = TRANSFERABLE_SKILLS[normalized]
+
+    return result
+
+
+def find_skill_matches(
+    resume_skills: Set[str],
+    required_skills: List[str],
+    preferred_skills: List[str] = None
+) -> Dict[str, any]:
+    """
+    Find matches between resume skills and job requirements.
+
+    Args:
+        resume_skills: Set of skills from resume
+        required_skills: List of required skills from job
+        preferred_skills: List of preferred/nice-to-have skills
+
+    Returns:
+        Dict with matched, missing, and partial matches
+    """
+    preferred_skills = preferred_skills or []
+
+    # Expand resume skills with related skills
+    expanded_resume = expand_skills(resume_skills)
+
+    # Normalize all skills
+    resume_normalized = {normalize_skill(s) for s in expanded_resume}
+    required_normalized = [normalize_skill(s) for s in required_skills]
+    preferred_normalized = [normalize_skill(s) for s in preferred_skills]
+
+    # Find matches
+    matched_required = []
+    missing_required = []
+
+    for skill in required_normalized:
+        if skill in resume_normalized:
+            matched_required.append(skill)
+        else:
+            # Check for partial/related matches
+            found_related = False
+            for resume_skill in resume_normalized:
+                if resume_skill in SKILL_RELATIONSHIPS.get(skill, []):
+                    matched_required.append(skill)
+                    found_related = True
+                    break
+            if not found_related:
+                missing_required.append(skill)
+
+    matched_preferred = [s for s in preferred_normalized if s in resume_normalized]
+    missing_preferred = [s for s in preferred_normalized if s not in resume_normalized]
+
+    return {
+        "matched_required": matched_required,
+        "missing_required": missing_required,
+        "matched_preferred": matched_preferred,
+        "missing_preferred": missing_preferred,
+        "required_match_rate": len(matched_required) / len(required_normalized) if required_normalized else 1.0,
+        "preferred_match_rate": len(matched_preferred) / len(preferred_normalized) if preferred_normalized else 1.0,
+    }

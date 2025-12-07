@@ -8,6 +8,16 @@ from typing import List, Dict, Optional
 from datetime import datetime
 
 from src.domain.entities.resume import Resume, Experience
+from src.domain.knowledge.career_stability import (
+    STABILITY_FLAGS,
+    STABILITY_BONUSES,
+    PJ_CLT_ADJUSTMENTS,
+    TECH_LAYOFF_COMPANIES,
+    LAYOFF_PERIOD,
+    STARTUP_TENURE_ADJUSTMENTS,
+    INDUSTRY_TENURE_EXPECTATIONS,
+    is_layoff_affected_company,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -114,22 +124,13 @@ CONTRACT_TYPE_KEYWORDS = {
 }
 
 # =========================================
-# TECH LAYOFFS 2022-2024 CONTEXT
+# TECH LAYOFFS 2022-2024 CONTEXT (from knowledge base)
+# Using TECH_LAYOFF_COMPANIES from career_stability knowledge base
+# which has 50+ companies with layoffs in 2022-2024
 # =========================================
 
-LAYOFF_COMPANIES_2022_2024 = {
-    # FAANG/MAANG
-    "google", "alphabet", "meta", "facebook", "amazon", "microsoft", "apple",
-    # Major Tech
-    "twitter", "x corp", "salesforce", "ibm", "intel", "cisco", "dell",
-    "spotify", "stripe", "coinbase", "robinhood", "netflix", "snap",
-    "uber", "lyft", "airbnb", "doordash", "instacart", "zillow",
-    "twilio", "shopify", "atlassian", "dropbox", "zoom", "docusign",
-    "paypal", "square", "block", "affirm", "plaid", "brex",
-    # Brazilian Tech
-    "nubank", "ifood", "creditas", "loft", "quinto andar", "quintoandar",
-    "loggi", "ebanx", "stone", "pagseguro", "vtex", "totvs",
-}
+# Use TECH_LAYOFF_COMPANIES from knowledge base import
+LAYOFF_COMPANIES_2022_2024 = TECH_LAYOFF_COMPANIES
 
 LAYOFF_KEYWORDS = [
     "layoff", "laid off", "downsized", "restructured", "demitido em massa",

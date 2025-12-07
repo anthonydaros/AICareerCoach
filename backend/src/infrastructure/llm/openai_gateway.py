@@ -1,4 +1,4 @@
-"""OpenAI SDK Gateway - Implementation pointing to Ollama."""
+"""OpenAI SDK Gateway - Compatible with OpenRouter, Ollama, or OpenAI."""
 
 import json
 import logging
@@ -23,18 +23,27 @@ logger = logging.getLogger(__name__)
 
 class OpenAIGateway:
     """
-    LLM Gateway using OpenAI SDK pointing to Ollama.
+    LLM Gateway using OpenAI SDK.
 
     This implementation uses the OpenAI Python SDK configured to
-    communicate with an Ollama server via its OpenAI-compatible API.
+    communicate with OpenRouter, Ollama, or OpenAI directly.
     """
 
     def __init__(self):
         settings = get_settings()
+
+        # Build default headers for OpenRouter (optional but recommended)
+        default_headers = {}
+        if settings.openrouter_app_url:
+            default_headers["HTTP-Referer"] = settings.openrouter_app_url
+        if settings.openrouter_app_name:
+            default_headers["X-Title"] = settings.openrouter_app_name
+
         self.client = AsyncOpenAI(
             base_url=settings.openai_base_url,
             api_key=settings.openai_api_key,
             timeout=settings.openai_timeout,
+            default_headers=default_headers if default_headers else None,
         )
         self.model = settings.openai_model
         self.temperature = settings.openai_temperature

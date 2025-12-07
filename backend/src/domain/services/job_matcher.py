@@ -3,7 +3,15 @@
 from src.domain.entities.resume import Resume
 from src.domain.entities.job_posting import JobPosting
 from src.domain.entities.analysis_result import JobMatch, MatchLevel, SkillGap, RequirementMatch
-from src.domain.services.skill_relationships import expand_skills, normalize_skill, SKILL_RELATIONSHIPS
+from src.domain.services.skill_relationships import (
+    expand_skills,
+    normalize_skill,
+    SKILL_RELATIONSHIPS,
+    TRANSFERABLE_SKILLS,
+    get_transferable_skills,
+    find_skill_matches,
+)
+from src.domain.knowledge.job_titles import detect_category, detect_seniority_from_title
 
 
 class JobMatcher:

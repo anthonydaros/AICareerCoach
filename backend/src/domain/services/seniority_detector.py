@@ -7,6 +7,17 @@ from dataclasses import dataclass, field
 
 from src.domain.entities.resume import Resume
 from src.domain.entities.job_posting import JobPosting
+from src.domain.knowledge.seniority_detection import (
+    SENIORITY_THRESHOLDS,
+    ACTION_VERBS_BY_LEVEL,
+    SKILL_INDICATORS,
+    IMPACT_SCOPE,
+    detect_seniority_level as kb_detect_seniority,
+)
+from src.domain.knowledge.job_titles import (
+    detect_seniority_from_title,
+    SENIORITY_KEYWORDS,
+)
 
 
 class SeniorityLevel(str, Enum):

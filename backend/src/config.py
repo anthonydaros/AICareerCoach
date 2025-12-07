@@ -10,15 +10,19 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
-    # OpenAI SDK Configuration (pointing to Open WebUI / Ollama)
+    # OpenAI SDK Configuration (compatible with OpenRouter, Ollama, or OpenAI)
     # SECURITY: These must be set via environment variables - no hardcoded credentials
-    openai_base_url: str = "http://localhost:11434/v1"  # Default to local Ollama
-    openai_api_key: str = "ollama"  # Safe default for local Ollama (no auth)
-    openai_model: str = "granite4:7b"
-    openai_embedding_model: str = "nomic-embed-text:latest"
+    openai_base_url: str = "https://openrouter.ai/api/v1"  # Default to OpenRouter
+    openai_api_key: str = ""  # Required - set via environment
+    openai_model: str = "openai/gpt-4o-mini"  # OpenRouter model format
+    openai_embedding_model: str = "openai/text-embedding-3-small"
     openai_temperature: float = 0.3
     openai_max_tokens: int = 4096
-    openai_timeout: int = 600  # 10 min for CPU-only Ollama
+    openai_timeout: int = 120  # 2 min for cloud APIs
+
+    # OpenRouter specific (optional - for rankings)
+    openrouter_app_url: str = ""
+    openrouter_app_name: str = "AI Career Coach"
 
     # API Configuration
     api_host: str = "0.0.0.0"

@@ -8,10 +8,18 @@ from src.domain.entities.resume import Resume
 from src.domain.entities.job_posting import JobPosting
 from src.domain.entities.analysis_result import ATSResult, KeywordAnalysis, KeywordWeight
 from src.domain.services.skill_relationships import expand_skills, normalize_skill
+from src.domain.knowledge.ats_scoring import (
+    ATS_WEIGHTS,
+    ROLE_WEIGHT_ADJUSTMENTS,
+    CONTACT_PATTERNS,
+    KEYWORD_CATEGORIES,
+    calculate_ats_component_scores,
+)
+from src.domain.knowledge.job_titles import detect_category
 
 
 # =========================================
-# ROLE TYPE DETECTION KEYWORDS
+# ROLE TYPE DETECTION KEYWORDS (from knowledge base)
 # =========================================
 
 ROLE_TYPE_KEYWORDS = {
@@ -35,16 +43,16 @@ ROLE_TYPE_KEYWORDS = {
 }
 
 # =========================================
-# WEIGHT CONFIGURATIONS PER ROLE TYPE
+# WEIGHT CONFIGURATIONS PER ROLE TYPE (from knowledge base)
 # =========================================
 
 WEIGHTS_BY_ROLE = {
     "technical": {
-        "skill_match": 40.0,
-        "experience": 30.0,
-        "education": 15.0,
-        "certifications": 10.0,
-        "keywords": 5.0,
+        "skill_match": ATS_WEIGHTS["skills"],
+        "experience": ATS_WEIGHTS["experience"],
+        "education": ATS_WEIGHTS["education"],
+        "certifications": ATS_WEIGHTS["certifications"],
+        "keywords": ATS_WEIGHTS["keywords"],
         "portfolio": 0.0,
         "leadership": 0.0,
     },
