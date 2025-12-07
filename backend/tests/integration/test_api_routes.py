@@ -66,7 +66,7 @@ class MockLLMGateway:
         }
 
     async def generate_interview_questions(
-        self, resume_summary: str, job_summary: str, skill_gaps: List[str]
+        self, resume_summary: str, job_summary: str, skill_gaps: List[str], seniority_level: str = "mid"
     ) -> List[dict]:
         """Return mock interview questions data."""
         return [
