@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     openai_embedding_model: str = "nomic-embed-text:latest"
     openai_temperature: float = 0.3
     openai_max_tokens: int = 4096
-    openai_timeout: int = 120
+    openai_timeout: int = 600  # 10 min for CPU-only Ollama
 
     # API Configuration
     api_host: str = "0.0.0.0"
