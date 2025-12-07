@@ -146,37 +146,36 @@ export const JobPostInput = forwardRef<JobPostInputRef>((props, ref) => {
                                 </div>
 
                                 {/* Editor Area - Only interactive if index 0 */}
-                                <div className="absolute inset-0 top-9 p-4 bg-transparent">
-                                    <textarea
-                                        id={`job-textarea-${job.id}`}
-                                        value={job.text}
-                                        onChange={(e) => updateJob(job.id, e.target.value)}
-                                        disabled={index !== 0}
-                                        aria-label={`Job posting ${jobs.findIndex(j => j.id === job.id) + 1} description`}
-                                        aria-describedby={index === 0 ? "job-input-instructions" : undefined}
-                                        className={cn(
-                                            "w-full h-full bg-transparent resize-none outline-none font-mono text-sm leading-relaxed",
-                                            "placeholder:text-muted-foreground/30 selection:bg-neon-cyan/30",
-                                            "focus:ring-2 focus:ring-neon-cyan/50 focus:ring-inset rounded",
-                                            index !== 0 ? "pointer-events-none text-muted-foreground/50" : "text-white"
+                                <div className="absolute inset-0 top-9 bottom-12 flex flex-col">
+                                    <div className="flex-1 p-3 pb-0 overflow-hidden">
+                                        <textarea
+                                            id={`job-textarea-${job.id}`}
+                                            value={job.text}
+                                            onChange={(e) => updateJob(job.id, e.target.value)}
+                                            disabled={index !== 0}
+                                            aria-label={`Job posting ${jobs.findIndex(j => j.id === job.id) + 1} description`}
+                                            aria-describedby={index === 0 ? "job-input-instructions" : undefined}
+                                            className={cn(
+                                                "w-full h-full bg-transparent resize-none outline-none font-mono text-sm leading-relaxed",
+                                                "placeholder:text-muted-foreground/30 selection:bg-neon-cyan/30",
+                                                "focus:ring-2 focus:ring-neon-cyan/50 focus:ring-inset rounded pr-2",
+                                                "scrollbar-thin scrollbar-thumb-neon-cyan/30 scrollbar-track-transparent hover:scrollbar-thumb-neon-cyan/50",
+                                                index !== 0 ? "pointer-events-none text-muted-foreground/50" : "text-white"
+                                            )}
+                                            placeholder={index === 0 ? "> PASTE JOB MISSION DATA..." : ""}
+                                            spellCheck={false}
+                                        />
+                                        {index === 0 && (
+                                            <p id="job-input-instructions" className="sr-only">
+                                                Paste or type the job posting description here. You can add multiple job postings using the New Intel button.
+                                            </p>
                                         )}
-                                        placeholder={index === 0 ? "> PASTE JOB MISSION DATA..." : ""}
-                                        spellCheck={false}
-                                    />
-                                    {index === 0 && (
-                                        <p id="job-input-instructions" className="sr-only">
-                                            Paste or type the job posting description here. You can add multiple job postings using the New Intel button.
-                                        </p>
-                                    )}
+                                    </div>
                                 </div>
 
-                                {/* Active Card Controls */}
+                                {/* Active Card Controls - Fixed Footer */}
                                 {index === 0 && (
-                                    <motion.div
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        className="absolute bottom-4 right-4 flex gap-2"
-                                    >
+                                    <div className="absolute bottom-0 left-0 right-0 h-12 bg-black/80 border-t border-white/10 flex items-center justify-end px-3 gap-2">
                                         <Button
                                             variant="outline"
                                             size="sm"
@@ -197,7 +196,7 @@ export const JobPostInput = forwardRef<JobPostInputRef>((props, ref) => {
                                             <ClipboardPaste className="h-3 w-3 mr-1" aria-hidden="true" />
                                             Paste
                                         </Button>
-                                    </motion.div>
+                                    </div>
                                 )}
                             </motion.div>
                         );

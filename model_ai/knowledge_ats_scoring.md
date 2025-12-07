@@ -12,15 +12,24 @@
 
 ## Detailed Scoring Breakdown
 
-### 1. Contact Information (15 points)
-- Email present: 5 pts
-- Phone number present: 5 pts
-- LinkedIn profile: 5 pts
+### 1. Contact Information (20 points)
+- Email present: 4 pts
+- Phone number present: 4 pts
+- LinkedIn profile: 4 pts
+- GitHub/Portfolio link: 4 pts
+- Location (city/country): 2 pts
+- Personal website: 2 pts
 
 **Regex Patterns:**
 - Email: `[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}`
-- Phone: `\d{3}[-.\s]?\d{3}[-.\s]?\d{4}`
-- LinkedIn: `linkedin\.com`
+- Phone US: `\d{3}[-.\s]?\d{3}[-.\s]?\d{4}`
+- Phone BR: `\+?55?\s?\(?\d{2}\)?\s?\d{4,5}[-.\s]?\d{4}`
+- Phone INT: `\+\d{1,3}[-.\s]?\(?\d{1,4}\)?[-.\s]?\d{2,4}[-.\s]?\d{2,4}[-.\s]?\d{2,4}`
+- LinkedIn: `linkedin\.com/in/[\w-]+`
+- GitHub: `github\.com/[\w-]+`
+- Behance: `behance\.net/[\w-]+`
+- Dribbble: `dribbble\.com/[\w-]+`
+- Portfolio: `portfolio|work|projects` (in URL context)
 
 ### 2. Section Structure (15 points)
 Required sections (3 pts each):
@@ -48,10 +57,24 @@ AWS, Azure, GCP, Docker, Kubernetes, Terraform, Jenkins, CI/CD, GitHub Actions, 
 PostgreSQL, MySQL, MongoDB, Redis, Elasticsearch, Kafka, Spark, Airflow, Snowflake
 
 #### AI/ML
-TensorFlow, PyTorch, Scikit-learn, Pandas, NumPy, LLM, RAG, LangChain, OpenAI
+TensorFlow, PyTorch, Scikit-learn, Pandas, NumPy, LLM, RAG, LangChain, OpenAI, CrewAI, Hugging Face, FAISS, Pinecone, Weaviate, Chroma, Prompt Engineering, Fine-tuning, Embeddings, Vector Databases, Ollama
+
+#### Design & UX
+Figma, FigJam, Sketch, Adobe XD, InVision, Framer, Principle, Zeplin
+UX Research, User Testing, Usability Testing, A/B Testing, Heuristic Evaluation
+Wireframes, Prototyping, Design Systems, Component Libraries, Style Guides
+UI Design, Visual Design, Interaction Design, Motion Design, Responsive Design
+Accessibility, WCAG, Mobile-First, User Journey, Information Architecture
+User Personas, User Stories, User Flows, Journey Mapping, Card Sorting
+
+#### Low-code & Automation
+n8n, Make, Integromat, Zapier, Power Automate, Airtable, Notion, Retool, Bubble, Webflow, Appsmith
+
+#### Product Management
+Jira, Confluence, Notion, Asana, Trello, Linear, Productboard, Amplitude, Mixpanel, Hotjar, FullStory
 
 #### Methodologies
-Agile, Scrum, Kanban, TDD, Microservices, REST API, GraphQL, Event-Driven
+Agile, Scrum, Kanban, TDD, BDD, Microservices, REST API, GraphQL, Event-Driven, Domain-Driven Design, Clean Architecture
 
 ### 4. Action Verbs (15 points)
 Points = min(verbs_found * 2, 15)
@@ -149,3 +172,71 @@ Critical format fixes needed:
 - Save as .pdf or .docx
 - Use single-column layout
 ```
+
+## Dynamic Weights by Role Type
+
+Different job types require different scoring emphasis. Detect role type from job title/description keywords.
+
+### Technical Roles (Software Engineer, Developer, etc.)
+| Component | Weight |
+|-----------|--------|
+| Skills Match | 40% |
+| Experience | 30% |
+| Education | 15% |
+| Certifications | 10% |
+| Keywords | 5% |
+
+**Detection keywords:** engineer, developer, programmer, backend, frontend, fullstack, devops, sre, architect
+
+### Design/UX Roles
+| Component | Weight |
+|-----------|--------|
+| Portfolio Quality | 35% |
+| Skills Match | 30% |
+| Experience | 20% |
+| Tools Proficiency | 10% |
+| Education | 5% |
+
+**Detection keywords:** designer, ux, ui, product design, visual design, interaction design, creative
+
+**Portfolio scoring:**
+- Has portfolio link: +15 pts
+- Behance/Dribbble link: +10 pts
+- Case studies mentioned: +10 pts
+
+### Data/Analytics Roles
+| Component | Weight |
+|-----------|--------|
+| Skills Match | 35% |
+| Experience | 30% |
+| Certifications | 15% |
+| Tools | 15% |
+| Education | 5% |
+
+**Detection keywords:** data scientist, analyst, data engineer, machine learning, ml engineer, ai engineer
+
+### Product/Management Roles
+| Component | Weight |
+|-----------|--------|
+| Experience | 40% |
+| Leadership Signals | 25% |
+| Skills Match | 20% |
+| Education | 10% |
+| Certifications | 5% |
+
+**Detection keywords:** product manager, project manager, scrum master, engineering manager, tech lead, head of
+
+## Regional Contact Formats
+
+### Brazil (BR)
+- Phone: `+55 (11) 99999-9999` or `(11) 99999-9999`
+- Common domains: `.com.br`, `.br`
+- LinkedIn often includes `/in/nome-sobrenome`
+
+### United States (US)
+- Phone: `(555) 123-4567` or `555-123-4567`
+- Standard domain formats
+
+### International
+- Always check for `+` prefix for international format
+- Accept various separator formats (dots, dashes, spaces)

@@ -2,12 +2,34 @@
 
 ## Seniority Level Thresholds
 
+### Default (US/International)
+
 | Level | Years | Title Patterns | Key Indicators |
 |-------|-------|---------------|----------------|
 | Junior | 0-2 | Junior, Associate, Entry-level | Learning, supporting, assisting |
 | Mid | 2-5 | Developer, Engineer, Analyst | Building, implementing, contributing |
 | Senior | 5-8 | Senior, Lead, Principal | Leading, architecting, mentoring |
 | Staff+ | 8+ | Staff, Principal, Architect, Director | Strategic, organizational impact |
+
+### Brazil (BR) - Adjusted Thresholds
+
+| Level | Years | Brazilian Titles | US Equivalent |
+|-------|-------|-----------------|---------------|
+| Junior | 0-2 | Júnior, Estagiário, Trainee | Junior, Intern |
+| Pleno (Mid) | 2-4 | Pleno, Desenvolvedor, Analista | Developer, Analyst |
+| Sênior | 3-6 | Sênior, Especialista | Senior Developer |
+| Lead | 5-8 | Tech Lead, Líder Técnico, Coordenador | Tech Lead, Coordinator |
+| Staff+ | 7+ | Arquiteto, Especialista Sênior, Principal | Architect, Principal |
+| Director | 8+ | Gerente, Head, Diretor | Manager, Head, Director |
+
+**Brazilian Seniority Keywords:**
+- **Pleno** = Mid-level (requires 2-4 years, very common in BR)
+- **Especialista** = Senior specialist (4-6 years, technical focus)
+- **Coordenador** = Coordinator/Lead (people management)
+- **Gerente** = Manager (full people management)
+- **Arquiteto de Soluções** = Solutions Architect
+
+**Important:** In Brazil, "Senior" is often achieved faster (3-4 years vs 5+ in US)
 
 ## Detection Weights
 
@@ -153,3 +175,70 @@ Look for patterns:
 - Titles may be inflated
 - Look at actual responsibilities
 - Consider company stage and team size
+
+## Career Track-Specific Patterns
+
+### Design Career Track
+
+| Level | Titles | Key Indicators |
+|-------|--------|----------------|
+| Junior | Junior Designer, Associate UX Designer, Design Intern | Following design systems, basic wireframes |
+| Mid | UX Designer, UI Designer, Product Designer | End-to-end design, user research |
+| Senior | Senior Product Designer, Lead Designer, Design Lead | Design strategy, mentoring, system ownership |
+| Principal | Principal Designer, Staff Designer, Head of Design | Cross-team influence, design vision |
+| Director | Design Director, VP of Design, Chief Design Officer | Organization-wide design strategy |
+
+**Design-Specific Verbs:**
+- Junior: created, designed, prototyped, assisted
+- Mid: researched, tested, iterated, collaborated
+- Senior: led, established, defined, mentored, scaled
+- Director: transformed, drove, influenced, championed
+
+**Portfolio Indicators:**
+- Case studies with process documentation: +Senior signal
+- Design system contributions: +Senior signal
+- A/B test results with metrics: +Mid/Senior signal
+- User research leadership: +Senior signal
+
+### Product Career Track
+
+| Level | Titles | Key Indicators |
+|-------|--------|----------------|
+| Junior | Associate PM, Junior PM, APM | Feature specs, stakeholder coordination |
+| Mid | Product Manager | Full product ownership, roadmap input |
+| Senior | Senior PM, Group PM | Multiple products, strategy influence |
+| Director | Director of Product, VP Product | Product portfolio, P&L responsibility |
+| Executive | Chief Product Officer, Head of Product | Company-wide product vision |
+
+**Product-Specific Verbs:**
+- Junior: supported, coordinated, documented, analyzed
+- Mid: owned, prioritized, launched, partnered
+- Senior: drove, defined strategy, scaled, influenced
+- Director: transformed, established vision, grew revenue
+
+### Data/Analytics Career Track
+
+| Level | Titles | Key Indicators |
+|-------|--------|----------------|
+| Junior | Data Analyst, Junior Data Scientist | SQL queries, basic visualizations |
+| Mid | Data Scientist, Analytics Engineer | ML models, experiment design |
+| Senior | Senior Data Scientist, Lead Analyst | Strategic insights, team leadership |
+| Staff | Staff Data Scientist, Principal Analyst | Org-wide data strategy |
+| Director | Head of Data, Director of Analytics | Data org leadership |
+
+### Engineering Management Track
+
+| Level | Titles | Key Indicators |
+|-------|--------|----------------|
+| Lead | Tech Lead, Team Lead | Technical leadership, some people management |
+| Manager | Engineering Manager | Direct reports, hiring, performance |
+| Senior Manager | Senior EM, Group Manager | Multiple teams |
+| Director | Engineering Director | Department leadership |
+| VP | VP Engineering, SVP | Org-wide engineering leadership |
+| Executive | CTO, Chief Architect | Company-wide technical vision |
+
+**Management Signals:**
+- "Led team of X" → Lead level
+- "Managed X engineers" → Manager level
+- "Built team from X to Y" → Senior Manager+
+- "Reported to CTO/CEO" → Director+

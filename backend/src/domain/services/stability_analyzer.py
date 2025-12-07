@@ -44,6 +44,12 @@ class TimelineEntry:
     end_year: Optional[int]
     duration_months: int
     seniority_level: int
+    # Brazilian employment context
+    contract_type: str = "unknown"  # pj, clt, freelancer, unknown
+    # Startup context
+    startup_stage: str = "unknown"  # early_stage, series_a, series_b, late_stage, unknown
+    # Layoff context
+    is_layoff_period: bool = False  # True if ended during 2022-2024 at known layoff company
 
 
 @dataclass
@@ -87,6 +93,67 @@ TITLE_SENIORITY_KEYWORDS = {
 
     # Level 8 - C-Level
     "cto": 8, "cio": 8, "ceo": 8, "chief": 8, "c-level": 8,
+}
+
+# =========================================
+# BRAZILIAN EMPLOYMENT CONTEXT (PJ vs CLT)
+# =========================================
+
+CONTRACT_TYPE_KEYWORDS = {
+    "pj": [
+        "pj", "pessoa jurídica", "pessoa juridica", "contractor", "consultor",
+        "prestador", "prestador de serviço", "prestador de servico",
+    ],
+    "clt": [
+        "clt", "efetivo", "empregado", "funcionário", "funcionario",
+        "carteira assinada",
+    ],
+    "freelancer": [
+        "freelance", "freelancer", "autônomo", "autonomo", "independente",
+    ],
+}
+
+# =========================================
+# TECH LAYOFFS 2022-2024 CONTEXT
+# =========================================
+
+LAYOFF_COMPANIES_2022_2024 = {
+    # FAANG/MAANG
+    "google", "alphabet", "meta", "facebook", "amazon", "microsoft", "apple",
+    # Major Tech
+    "twitter", "x corp", "salesforce", "ibm", "intel", "cisco", "dell",
+    "spotify", "stripe", "coinbase", "robinhood", "netflix", "snap",
+    "uber", "lyft", "airbnb", "doordash", "instacart", "zillow",
+    "twilio", "shopify", "atlassian", "dropbox", "zoom", "docusign",
+    "paypal", "square", "block", "affirm", "plaid", "brex",
+    # Brazilian Tech
+    "nubank", "ifood", "creditas", "loft", "quinto andar", "quintoandar",
+    "loggi", "ebanx", "stone", "pagseguro", "vtex", "totvs",
+}
+
+LAYOFF_KEYWORDS = [
+    "layoff", "laid off", "downsized", "restructured", "demitido em massa",
+    "company shutdown", "startup closed", "acquisition", "acquired",
+    "position eliminated", "role eliminated", "team dissolved", "rif",
+    "reduction in force", "desligamento em massa", "reestruturação",
+]
+
+# =========================================
+# STARTUP STAGE INDICATORS
+# =========================================
+
+STARTUP_INDICATORS = {
+    "early_stage": [
+        "startup", "seed", "pre-seed", "angel", "early stage", "early-stage",
+        "fundador", "founder", "co-founder", "cofundador",
+    ],
+    "series_a": ["series a", "série a", "serie a"],
+    "series_b": ["series b", "série b", "serie b"],
+    "late_stage": [
+        "series c", "series d", "series e", "series f",
+        "série c", "série d", "série e",
+        "post-ipo", "ipo", "unicorn", "unicórnio",
+    ],
 }
 
 
@@ -196,6 +263,15 @@ class StabilityAnalyzer:
                 if end_year >= self.current_year:
                     end_year = None  # Current job
 
+            # Detect Brazilian employment context
+            contract_type = self._detect_contract_type(exp.title, exp.company)
+
+            # Detect startup stage
+            startup_stage = self._detect_startup_stage(exp.company, exp.title)
+
+            # Detect layoff context
+            is_layoff = self._detect_layoff_context(exp.company, end_year)
+
             timeline.append(TimelineEntry(
                 company=exp.company,
                 title=exp.title,
@@ -203,6 +279,9 @@ class StabilityAnalyzer:
                 end_year=end_year,
                 duration_months=exp.duration_months,
                 seniority_level=seniority,
+                contract_type=contract_type,
+                startup_stage=startup_stage,
+                is_layoff_period=is_layoff,
             ))
 
         # Sort by start year (most recent first)
@@ -222,6 +301,37 @@ class StabilityAnalyzer:
                 max_level = max(max_level, level)
 
         return max_level
+
+    def _detect_contract_type(self, title: str, company: str) -> str:
+        """Detect if role was PJ, CLT, or Freelancer (Brazilian employment context)."""
+        text = f"{title} {company}".lower()
+
+        for contract_type, keywords in CONTRACT_TYPE_KEYWORDS.items():
+            if any(kw in text for kw in keywords):
+                return contract_type
+
+        return "unknown"
+
+    def _detect_startup_stage(self, company: str, title: str = "") -> str:
+        """Detect startup stage from company/title info."""
+        text = f"{company} {title}".lower()
+
+        # Check stages in order (more specific first)
+        for stage in ["late_stage", "series_b", "series_a", "early_stage"]:
+            if any(indicator in text for indicator in STARTUP_INDICATORS[stage]):
+                return stage
+
+        return "unknown"
+
+    def _detect_layoff_context(self, company: str, end_year: Optional[int]) -> bool:
+        """Detect if short tenure might be due to 2022-2024 layoffs."""
+        # Check if end year is in layoff period
+        if end_year and 2022 <= end_year <= 2024:
+            company_lower = company.lower()
+            # Check if company is in known layoff list
+            if any(lc in company_lower for lc in LAYOFF_COMPANIES_2022_2024):
+                return True
+        return False
 
     def _calculate_avg_tenure(self, timeline: List[TimelineEntry]) -> float:
         """Calculate average tenure in months."""
@@ -309,6 +419,37 @@ class StabilityAnalyzer:
 
         return False
 
+    def _get_penalty_reduction_factor(self, entry: TimelineEntry) -> float:
+        """
+        Calculate penalty reduction factor based on context.
+
+        Returns a multiplier (0.0 to 1.0) to apply to penalties.
+        - PJ/Freelancer: 50% reduction (factor = 0.5)
+        - Layoff period: 100% reduction (factor = 0.0)
+        - Early-stage startup: 70% reduction (factor = 0.3)
+        - Series A startup: 50% reduction (factor = 0.5)
+        - Series B startup: 25% reduction (factor = 0.75)
+        """
+        # Layoff period takes precedence - no penalty
+        if entry.is_layoff_period:
+            return 0.0
+
+        # PJ/Freelancer - reduced expectations
+        if entry.contract_type in ["pj", "freelancer"]:
+            return 0.5
+
+        # Startup stage adjustments
+        startup_factors = {
+            "early_stage": 0.3,   # 70% reduction
+            "series_a": 0.5,      # 50% reduction
+            "series_b": 0.75,     # 25% reduction
+            "late_stage": 1.0,    # No reduction
+        }
+        if entry.startup_stage in startup_factors:
+            return startup_factors[entry.startup_stage]
+
+        return 1.0  # Full penalty (no reduction)
+
     def _calculate_score(
         self,
         avg_tenure: float,
@@ -324,44 +465,117 @@ class StabilityAnalyzer:
         flags = []
         indicators = []
 
-        # Short average tenure
+        # Calculate context-adjusted metrics
+        # Count short tenures with context adjustments
+        adjusted_short_jobs = 0
+        context_adjusted_entries = []
+
+        for entry in timeline:
+            factor = self._get_penalty_reduction_factor(entry)
+            if entry.duration_months < 12:
+                # Apply penalty reduction based on context
+                if factor < 1.0:
+                    context = []
+                    if entry.is_layoff_period:
+                        context.append("layoff period")
+                    if entry.contract_type in ["pj", "freelancer"]:
+                        context.append(f"{entry.contract_type.upper()} contract")
+                    if entry.startup_stage != "unknown":
+                        context.append(f"{entry.startup_stage.replace('_', ' ')} startup")
+
+                    context_adjusted_entries.append({
+                        "company": entry.company,
+                        "factor": factor,
+                        "context": context,
+                    })
+
+                # Only count as short if factor > 0
+                if factor > 0:
+                    adjusted_short_jobs += factor
+
+        # Short average tenure - with context adjustment
+        tenure_penalty = 0
         if avg_tenure < 12:
-            score -= 20
-            flags.append(StabilityFlag.SHORT_TENURE)
-            indicators.append(f"Very short average tenure of {avg_tenure:.0f} months (below 12 months)")
+            base_penalty = 20
+            # Check if most short jobs have mitigating context
+            if context_adjusted_entries:
+                avg_factor = sum(e["factor"] for e in context_adjusted_entries) / len(context_adjusted_entries)
+                tenure_penalty = int(base_penalty * avg_factor)
+            else:
+                tenure_penalty = base_penalty
+
+            if tenure_penalty > 0:
+                score -= tenure_penalty
+                flags.append(StabilityFlag.SHORT_TENURE)
+                indicators.append(f"Very short average tenure of {avg_tenure:.0f} months (below 12 months)")
+            else:
+                indicators.append(f"Short tenure of {avg_tenure:.0f} months - mitigated by context (PJ/layoffs/startups)")
+
         elif avg_tenure < 18:
             score -= 10
             indicators.append(f"Below average tenure of {avg_tenure:.0f} months (ideal is 24+ months)")
 
         # Job hopping - too many companies in 5 years
-        if companies_5y > 4:
+        # Adjust threshold for Brazilian market (PJ culture)
+        has_pj_culture = any(e.contract_type in ["pj", "freelancer"] for e in timeline)
+        job_hopping_threshold = 5 if has_pj_culture else 4
+        high_threshold = 4 if has_pj_culture else 3
+
+        if companies_5y > job_hopping_threshold:
             score -= 15
             flags.append(StabilityFlag.JOB_HOPPER)
             indicators.append(f"{companies_5y} companies in the last 5 years (indicates job hopping)")
-        elif companies_5y > 3:
+        elif companies_5y > high_threshold:
             score -= 5
             indicators.append(f"{companies_5y} companies in the last 5 years (slightly high)")
 
         # Employment gaps
         for gap in gaps:
-            score -= 10
-            flags.append(StabilityFlag.EMPLOYMENT_GAP)
-            indicators.append(
-                f"Employment gap of {gap.months} months between "
-                f"{gap.after_company} and {gap.before_company} ({gap.start_year}-{gap.end_year})"
+            # Don't penalize COVID-era gaps (2020-2021)
+            if 2020 <= gap.start_year <= 2021:
+                indicators.append(
+                    f"Employment gap of {gap.months} months between "
+                    f"{gap.after_company} and {gap.before_company} ({gap.start_year}-{gap.end_year}) - COVID period, no penalty"
+                )
+            else:
+                score -= 10
+                flags.append(StabilityFlag.EMPLOYMENT_GAP)
+                indicators.append(
+                    f"Employment gap of {gap.months} months between "
+                    f"{gap.after_company} and {gap.before_company} ({gap.start_year}-{gap.end_year})"
+                )
+
+        # Consecutive short jobs - with context adjustment
+        if consecutive_short >= 2:
+            # Check if consecutive short jobs are all in mitigating context
+            consecutive_with_context = sum(
+                1 for e in timeline[:consecutive_short]
+                if e.is_layoff_period or e.contract_type in ["pj", "freelancer"]
+                or e.startup_stage in ["early_stage", "series_a"]
             )
 
-        # Consecutive short jobs
-        if consecutive_short >= 2:
-            score -= 15
-            flags.append(StabilityFlag.CONSECUTIVE_SHORT_JOBS)
-            indicators.append(f"{consecutive_short} consecutive jobs with tenure under 12 months")
+            if consecutive_with_context >= consecutive_short:
+                indicators.append(
+                    f"{consecutive_short} consecutive short jobs - mitigated by context (PJ/layoffs/startups)"
+                )
+            else:
+                score -= 15
+                flags.append(StabilityFlag.CONSECUTIVE_SHORT_JOBS)
+                indicators.append(f"{consecutive_short} consecutive jobs with tenure under 12 months")
 
         # Seniority regression
         if has_regression:
             score -= 20
             flags.append(StabilityFlag.SENIORITY_REGRESSION)
             indicators.append("Career regression detected - moved to lower seniority role")
+
+        # Add positive notes for context awareness
+        for entry_info in context_adjusted_entries:
+            if entry_info["context"]:
+                context_str = ", ".join(entry_info["context"])
+                indicators.append(
+                    f"Note: Short tenure at {entry_info['company']} considered in context ({context_str})"
+                )
 
         # Ensure score doesn't go negative
         score = max(0, score)

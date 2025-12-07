@@ -1,104 +1,207 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Hacker content for upload phase (~60 lines)
 const HACKER_LINES_UPLOAD = [
-  "// Initializing document parser...",
-  "const parser = new ResumeDecoder();",
-  "await parser.loadBinaryStream(file);",
+  "// boot: resume_parser_v3.7.2",
+  "sys.init({ mode: 'binary_decode' });",
+  "console.log('[SYS] Initializing parser...');",
   "",
-  "// Extracting raw text data...",
-  "const buffer = parser.decodeBuffer();",
-  "const text = buffer.toString('utf-8');",
+  "const parser = new DocumentParser();",
+  "parser.setEncoding('utf-8');",
+  "parser.enableOCR(true);",
+  "parser.setMaxFileSize(10 * 1024 * 1024);",
+  "",
+  "// Loading file into memory buffer...",
+  "const fileBuffer = await fs.readFile(path);",
+  "const checksum = crypto.hash('sha256', fileBuffer);",
+  "console.log(`[OK] Checksum: ${checksum.slice(0,8)}`);",
+  "console.log(`[OK] File size: ${fileBuffer.length} bytes`);",
+  "",
+  "// Detecting document format...",
+  "const format = parser.detectFormat(fileBuffer);",
+  "const mimeType = parser.getMimeType(fileBuffer);",
+  "console.log(`[OK] Format: ${format} (${mimeType})`);",
+  "",
+  "if (format === 'PDF') {",
+  "  await parser.loadPDFEngine();",
+  "  const pdfMeta = parser.extractPDFMetadata();",
+  "  console.log(`[OK] PDF pages: ${pdfMeta.pages}`);",
+  "} else if (format === 'DOCX') {",
+  "  await parser.loadXMLExtractor();",
+  "  const docMeta = parser.extractDocMetadata();",
+  "  console.log(`[OK] Word count: ${docMeta.words}`);",
+  "}",
+  "",
+  "// Extracting raw text content...",
+  "const rawText = await parser.extract();",
+  "const wordCount = rawText.split(/\\s+/).length;",
+  "console.log(`[OK] Extracted ${wordCount} words`);",
+  "",
+  "// Splitting into sections...",
+  "const sections = parser.splitSections(rawText);",
+  "console.log(`[OK] Found ${sections.length} sections`);",
+  "",
+  "// Identifying section types...",
+  "for (const section of sections) {",
+  "  section.type = parser.classifySection(section);",
+  "  section.confidence = parser.getConfidence();",
+  "}",
   "",
   "// Validating document structure...",
-  "if (!parser.validateFormat()) {",
-  "  throw new ParseError('INVALID_FORMAT');",
-  "}",
+  "const isValid = parser.validateSchema(sections);",
+  "if (!isValid) throw new Error('MALFORMED_DOC');",
+  "",
+  "// Running quality checks...",
+  "const quality = parser.assessQuality(rawText);",
+  "console.log(`[OK] Quality score: ${quality.score}/100`);",
+  "",
+  "// Normalizing text encoding...",
+  "const normalized = parser.normalizeText(rawText);",
+  "console.log('[OK] Text normalized successfully');",
   "",
   "// Document parsed successfully",
-  "return { text, metadata };",
+  "return { text: rawText, sections, metadata };",
 ];
 
+// Expanded hacker content for analyze phase (~120 lines)
 const HACKER_LINES_ANALYZE = [
-  "// Initializing CareerAI neural engine...",
-  "import { CareerAI } from '@anthropic/career';",
-  "const ai = new CareerAI({ model: 'careerai' });",
+  "// boot: career_ai_engine_v4.2.0",
+  "import { NeuralMatcher } from '@ai/career';",
+  "import { SkillGraph } from '@ai/taxonomy';",
+  "const ai = new NeuralMatcher({ gpu: true });",
+  "console.log('[SYS] AI Engine initialized');",
   "",
   "// Loading skill taxonomy database...",
-  "const taxonomy = await ai.loadSkillGraph();",
-  "console.log('[OK] 50,000+ skills indexed');",
+  "const taxonomy = await ai.loadGraph('skills_v3');",
+  "console.log('[OK] 127,000 skills indexed');",
+  "const embeddings = await ai.loadEmbeddings();",
+  "console.log('[OK] Embeddings loaded (768-dim)');",
   "",
-  "// Extracting candidate profile...",
-  "const profile = ai.extractProfile(resume);",
-  "const skills = profile.skills.map(s => ({",
-  "  name: s.name,",
-  "  level: s.proficiency,",
-  "  years: s.experience",
-  "}));",
+  "// Parsing candidate resume...",
+  "console.log('[SYS] Parsing resume content...');",
+  "const profile = ai.parseResume(resumeText);",
+  "profile.contact = ai.extractContact(profile);",
+  "profile.titles = ai.detectJobTitles(profile);",
+  "console.log(`[OK] Found ${profile.titles.length} job titles`);",
   "",
-  "// Cross-referencing job requirements...",
-  "for (const job of jobPostings) {",
-  "  const match = ai.calculateMatch(profile, job);",
-  "  const gaps = ai.identifyGaps(profile, job);",
-  "  results.push({ job, match, gaps });",
+  "// Extracting technical stack...",
+  "const techStack = ai.extractTechStack(profile);",
+  "console.log(`[OK] Detected ${techStack.length} technologies`);",
+  "for (const tech of techStack) {",
+  "  tech.yearsUsed = ai.estimateYears(tech, profile);",
+  "  tech.proficiency = ai.scoreProficiency(tech);",
+  "  tech.category = taxonomy.classify(tech.name);",
   "}",
   "",
-  "// Computing ATS compatibility score...",
-  "const ats = ai.computeATSScore({",
-  "  skills: profile.skills,",
-  "  experience: profile.experience,",
-  "  keywords: extractKeywords(jobs)",
+  "// Extracting soft skills...",
+  "const softSkills = ai.extractSoftSkills(profile);",
+  "console.log(`[OK] Found ${softSkills.length} soft skills`);",
+  "",
+  "// Analyzing experience timeline...",
+  "console.log('[SYS] Building career timeline...');",
+  "const timeline = ai.buildTimeline(profile);",
+  "const gaps = ai.detectEmploymentGaps(timeline);",
+  "const avgTenure = ai.calculateAvgTenure(timeline);",
+  "console.log(`[OK] Avg tenure: ${avgTenure} months`);",
+  "console.log(`[OK] Total experience: ${timeline.totalYears}y`);",
+  "",
+  "// Analyzing career progression...",
+  "const progression = ai.analyzeProgression(timeline);",
+  "console.log(`[OK] Career trajectory: ${progression.trend}`);",
+  "",
+  "// Detecting seniority indicators...",
+  "const seniority = ai.classifySeniority({",
+  "  titles: profile.titles,",
+  "  yearsExp: timeline.totalYears,",
+  "  responsibilities: profile.responsibilities",
+  "});",
+  "console.log(`[OK] Seniority level: ${seniority.level}`);",
+  "",
+  "// Extracting education & certifications...",
+  "const education = ai.extractEducation(profile);",
+  "const certs = ai.extractCertifications(profile);",
+  "console.log(`[OK] ${education.length} degrees found`);",
+  "console.log(`[OK] ${certs.length} certifications found`);",
+  "",
+  "// Ingesting job descriptions...",
+  "console.log('[SYS] Processing job postings...');",
+  "for (const job of jobPostings) {",
+  "  job.requiredSkills = ai.extractRequired(job);",
+  "  job.preferredSkills = ai.extractPreferred(job);",
+  "  job.roleLevel = ai.classifyRole(job);",
+  "  job.industry = ai.detectIndustry(job);",
+  "  console.log(`[OK] Processed: ${job.title || 'Job'}`);",
+  "}",
+  "",
+  "// Computing semantic embeddings...",
+  "console.log('[SYS] Generating embeddings...');",
+  "const resumeEmbed = ai.embed(profile.summary);",
+  "for (const job of jobPostings) {",
+  "  job.embedding = ai.embed(job.description);",
+  "}",
+  "",
+  "// Computing skill match scores...",
+  "console.log('[SYS] Calculating match scores...');",
+  "const results = [];",
+  "for (const job of jobPostings) {",
+  "  const match = ai.semanticMatch(profile, job);",
+  "  const gaps = ai.identifyGaps(profile, job);",
+  "  const fitScore = ai.calculateFit(match, gaps);",
+  "  const similarity = ai.cosineSimilarity(resumeEmbed, job.embedding);",
+  "  results.push({ job, match, gaps, fitScore, similarity });",
+  "  console.log(`[OK] Match: ${Math.round(fitScore)}%`);",
+  "}",
+  "",
+  "// Ranking job matches...",
+  "results.sort((a, b) => b.fitScore - a.fitScore);",
+  "console.log('[OK] Jobs ranked by fit score');",
+  "",
+  "// Calculating ATS compatibility...",
+  "console.log('[SYS] Analyzing ATS compatibility...');",
+  "const atsScore = ai.computeATS({",
+  "  keywords: ai.extractKeywords(jobPostings),",
+  "  resume: profile,",
+  "  format: ai.analyzeFormatting(resumeText)",
+  "});",
+  "console.log(`[OK] ATS Score: ${atsScore.total}/100`);",
+  "",
+  "// Analyzing keyword density...",
+  "const keywordAnalysis = ai.analyzeKeywords(profile, jobPostings);",
+  "console.log(`[OK] Matched: ${keywordAnalysis.matched.length} keywords`);",
+  "console.log(`[OK] Missing: ${keywordAnalysis.missing.length} keywords`);",
+  "",
+  "// Generating improvement suggestions...",
+  "console.log('[SYS] Generating recommendations...');",
+  "const suggestions = ai.generateSuggestions({",
+  "  profile, atsScore, gaps: results[0]?.gaps",
   "});",
   "",
   "// Generating career insights...",
-  "const seniority = ai.detectSeniority(profile);",
-  "const stability = ai.analyzeCareerPath(profile);",
-  "const bestFit = ai.findBestMatch(results);",
+  "const insights = ai.generateInsights({",
+  "  profile, results, atsScore, seniority",
+  "});",
+  "console.log('[OK] Career insights generated');",
   "",
-  "// Compiling comprehensive report...",
+  "// Running final validation...",
+  "const validation = ai.validateResults(results);",
+  "console.log('[OK] Results validated');",
+  "",
+  "// Compiling final report...",
+  "console.log('[SYS] Compiling report...');",
   "return {",
-  "  ats_result: ats,",
+  "  ats_result: atsScore,",
   "  job_matches: results,",
-  "  seniority, stability, bestFit",
+  "  insights, seniority,",
+  "  suggestions",
   "};",
 ];
 
-// Matrix rain characters
-const MATRIX_CHARS = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789";
-
-interface MatrixColumnProps {
-  delay: number;
-  duration: number;
-  left: string;
-}
-
-function MatrixColumn({ delay, duration, left }: MatrixColumnProps) {
-  const chars = useMemo(() => {
-    return Array.from({ length: 20 }, () =>
-      MATRIX_CHARS[Math.floor(Math.random() * MATRIX_CHARS.length)]
-    ).join("\n");
-  }, []);
-
-  return (
-    <motion.div
-      className="absolute top-0 text-neon-green/30 text-[8px] leading-none font-mono whitespace-pre pointer-events-none select-none"
-      style={{ left }}
-      initial={{ y: -200, opacity: 0 }}
-      animate={{ y: 400, opacity: [0, 0.5, 0.5, 0] }}
-      transition={{
-        duration,
-        delay,
-        repeat: Infinity,
-        repeatDelay: Math.random() * 3,
-        ease: "linear",
-      }}
-    >
-      {chars}
-    </motion.div>
-  );
-}
+// Constants for scrolling
+const VISIBLE_LINES = 12;
+const LINE_HEIGHT = 20;
 
 interface TerminalTypewriterProps {
   status: "uploading" | "analyzing";
@@ -109,19 +212,19 @@ export function TerminalTypewriter({ status }: TerminalTypewriterProps) {
   const [currentLineIndex, setCurrentLineIndex] = useState(0);
   const [currentCharIndex, setCurrentCharIndex] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
-  const [glitchText, setGlitchText] = useState("");
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const HACKER_LINES = status === "uploading" ? HACKER_LINES_UPLOAD : HACKER_LINES_ANALYZE;
 
-  // Matrix rain columns
-  const matrixColumns = useMemo(() => {
-    return Array.from({ length: 15 }, (_, i) => ({
-      delay: Math.random() * 5,
-      duration: 3 + Math.random() * 4,
-      left: `${(i / 15) * 100}%`,
-    }));
-  }, []);
+  // Calculate offset to scroll lines up (start at top)
+  const offset = useMemo(() => {
+    if (currentLineIndex < VISIBLE_LINES) return 0;
+    return -((currentLineIndex - VISIBLE_LINES + 1) * LINE_HEIGHT);
+  }, [currentLineIndex]);
+
+  // Progress percentage
+  const progress = useMemo(() => {
+    return Math.min(Math.round((currentLineIndex / HACKER_LINES.length) * 100), 95);
+  }, [currentLineIndex, HACKER_LINES.length]);
 
   // Reset when status changes
   useEffect(() => {
@@ -129,26 +232,6 @@ export function TerminalTypewriter({ status }: TerminalTypewriterProps) {
     setCurrentLineIndex(0);
     setCurrentCharIndex(0);
     setIsComplete(false);
-  }, [status]);
-
-  // Glitch effect on status text
-  useEffect(() => {
-    const glitchChars = "!@#$%^&*()_+-=[]{}|;':\",./<>?";
-    const originalText = status === "uploading"
-      ? "PARSING RESUME DATA"
-      : "NEURAL ANALYSIS IN PROGRESS";
-
-    const interval = setInterval(() => {
-      if (Math.random() > 0.7) {
-        const glitched = originalText.split("").map((char, i) =>
-          Math.random() > 0.9 ? glitchChars[Math.floor(Math.random() * glitchChars.length)] : char
-        ).join("");
-        setGlitchText(glitched);
-        setTimeout(() => setGlitchText(""), 100);
-      }
-    }, 500);
-
-    return () => clearInterval(interval);
   }, [status]);
 
   // Typing effect
@@ -195,13 +278,6 @@ export function TerminalTypewriter({ status }: TerminalTypewriterProps) {
     }
   }, [currentLineIndex, currentCharIndex, isComplete, HACKER_LINES]);
 
-  // Auto-scroll to bottom
-  useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.scrollTop = containerRef.current.scrollHeight;
-    }
-  }, [lines]);
-
   const getLineColor = (line: string) => {
     if (line.startsWith("//")) return "text-muted-foreground/60";
     if (line.includes("console.log")) return "text-neon-green";
@@ -211,157 +287,112 @@ export function TerminalTypewriter({ status }: TerminalTypewriterProps) {
     return "text-neon-cyan";
   };
 
-  const statusText = glitchText || (status === "uploading" ? "PARSING RESUME DATA" : "NEURAL ANALYSIS IN PROGRESS");
-
   return (
-    <div className="flex flex-col h-full relative overflow-hidden">
-      {/* Matrix rain background */}
-      <div className="absolute inset-0 overflow-hidden opacity-30 pointer-events-none">
-        {matrixColumns.map((col, i) => (
-          <MatrixColumn key={i} {...col} />
-        ))}
-      </div>
-
-      {/* Status header */}
-      <div className="flex items-center gap-3 mb-4 pb-3 border-b border-neon-cyan/20 relative z-10">
-        <div className="flex gap-1">
-          <motion.div
-            className="w-2 h-2 rounded-full bg-red-500"
-            animate={{ opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 1, repeat: Infinity }}
-          />
-          <motion.div
-            className="w-2 h-2 rounded-full bg-yellow-500"
-            animate={{ opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 1, repeat: Infinity, delay: 0.3 }}
-          />
-          <motion.div
-            className="w-2 h-2 rounded-full bg-green-500"
-            animate={{ opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 1, repeat: Infinity, delay: 0.6 }}
-          />
-        </div>
-        <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
-          {statusText}...
-        </span>
-        <motion.div
-          animate={{ opacity: [0.3, 1, 0.3] }}
-          transition={{ duration: 1, repeat: Infinity }}
-          className="ml-auto w-2 h-2 rounded-full bg-neon-cyan shadow-[0_0_10px_rgba(0,243,255,0.8)]"
-        />
-      </div>
-
-      {/* Terminal content */}
-      <div
-        ref={containerRef}
-        className="flex-1 overflow-auto font-mono text-xs leading-relaxed scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent relative z-10"
-      >
-        {lines.map((line, i) => (
-          <motion.div
-            key={i}
-            className="flex"
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.1 }}
+    <div className="h-full flex flex-col relative overflow-hidden">
+      {/* Terminal content - Top-aligned scrolling area */}
+      <div className="flex-1 relative overflow-hidden">
+        <div className="absolute inset-0 flex flex-col justify-start px-4 pt-4">
+          {/* Visible lines window */}
+          <div
+            className="relative overflow-hidden"
+            style={{ height: `${VISIBLE_LINES * LINE_HEIGHT}px` }}
           >
-            <span className="text-neon-cyan/40 w-8 text-right pr-3 select-none">
-              {String(i + 1).padStart(2, "0")}
-            </span>
-            <span className={getLineColor(line)}>
-              {line}
-              {i === currentLineIndex && !isComplete && (
-                <motion.span
-                  animate={{ opacity: [1, 0] }}
-                  transition={{ duration: 0.4, repeat: Infinity }}
-                  className="inline-block w-2 h-3.5 bg-neon-cyan ml-0.5 align-middle shadow-[0_0_5px_rgba(0,243,255,0.8)]"
-                />
-              )}
-            </span>
-          </motion.div>
-        ))}
-
-        {/* Progress section */}
-        <AnimatePresence>
-          {!isComplete && (
             <motion.div
-              className="mt-6 pt-4 border-t border-border/30"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              className="absolute w-full font-mono text-xs"
+              animate={{ y: offset }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
             >
-              <div className="flex items-center gap-3 mb-3">
-                <span className="text-[10px] text-muted-foreground uppercase">Processing</span>
-                <div className="flex-1 h-2 bg-black/60 rounded-full overflow-hidden border border-neon-cyan/20">
-                  <motion.div
-                    className="h-full bg-gradient-to-r from-neon-cyan via-neon-pink to-neon-cyan bg-[length:200%_100%]"
-                    initial={{ width: "0%" }}
-                    animate={{
-                      width: `${Math.min((currentLineIndex / HACKER_LINES.length) * 100, 95)}%`,
-                      backgroundPosition: ["0% 0%", "100% 0%"],
-                    }}
-                    transition={{
-                      width: { duration: 0.3 },
-                      backgroundPosition: { duration: 2, repeat: Infinity, ease: "linear" }
-                    }}
-                  />
-                </div>
-                <span className="text-[10px] font-mono text-neon-cyan w-12 text-right">
-                  {Math.min(Math.round((currentLineIndex / HACKER_LINES.length) * 100), 95)}%
-                </span>
-              </div>
-
-              {/* Additional stats */}
-              <div className="grid grid-cols-3 gap-2 text-[9px] font-mono">
-                <div className="bg-black/40 rounded px-2 py-1 border border-neon-cyan/10">
-                  <span className="text-muted-foreground">Lines:</span>
-                  <span className="text-neon-cyan ml-1">{currentLineIndex}</span>
-                </div>
-                <div className="bg-black/40 rounded px-2 py-1 border border-neon-pink/10">
-                  <span className="text-muted-foreground">Ops:</span>
-                  <span className="text-neon-pink ml-1">{currentLineIndex * 47}</span>
-                </div>
-                <div className="bg-black/40 rounded px-2 py-1 border border-neon-yellow/10">
-                  <span className="text-muted-foreground">Time:</span>
-                  <span className="text-neon-yellow ml-1">{(currentLineIndex * 0.8).toFixed(1)}s</span>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Completion state */}
-        <AnimatePresence>
-          {isComplete && (
-            <motion.div
-              className="mt-4 pt-4 border-t border-neon-green/30"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <div className="flex items-center gap-2 text-neon-green text-[10px]">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+              {lines.map((line, i) => (
+                <div
+                  key={i}
+                  className="flex items-center"
+                  style={{ height: `${LINE_HEIGHT}px`, minHeight: `${LINE_HEIGHT}px`, maxHeight: `${LINE_HEIGHT}px` }}
                 >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-                  </svg>
-                </motion.div>
-                <span className="uppercase tracking-wider font-bold">Analysis Complete</span>
-                <motion.span
-                  animate={{ opacity: [0, 1, 0] }}
-                  transition={{ duration: 1, repeat: Infinity }}
-                  className="text-neon-green"
-                >
-                  _
-                </motion.span>
-              </div>
-              <p className="text-[9px] text-muted-foreground mt-2">
-                Rendering results... Please wait
-              </p>
+                  <span className="text-neon-cyan/40 w-6 text-right pr-2 select-none text-[10px] shrink-0">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <span className={`${getLineColor(line)} truncate text-[11px] leading-tight`}>
+                    {line}
+                    {i === currentLineIndex && !isComplete && (
+                      <motion.span
+                        animate={{ opacity: [1, 0] }}
+                        transition={{ duration: 0.4, repeat: Infinity }}
+                        className="inline-block w-1.5 h-3 bg-neon-cyan ml-0.5 align-middle shadow-[0_0_5px_rgba(0,243,255,0.8)]"
+                      />
+                    )}
+                  </span>
+                </div>
+              ))}
             </motion.div>
-          )}
-        </AnimatePresence>
+          </div>
+        </div>
       </div>
+
+      {/* Footer - Fixed at bottom with progress bar */}
+      <AnimatePresence>
+        {!isComplete && (
+          <motion.div
+            className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-black/80 to-transparent z-10"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Processing</span>
+              <div className="flex-1 h-2 bg-black/60 rounded-full overflow-hidden border border-neon-cyan/20">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-neon-cyan via-neon-pink to-neon-cyan bg-[length:200%_100%]"
+                  initial={{ width: "0%" }}
+                  animate={{
+                    width: `${progress}%`,
+                    backgroundPosition: ["0% 0%", "100% 0%"],
+                  }}
+                  transition={{
+                    width: { duration: 0.3 },
+                    backgroundPosition: { duration: 2, repeat: Infinity, ease: "linear" }
+                  }}
+                />
+              </div>
+              <span className="text-[10px] font-mono text-neon-cyan w-10 text-right">
+                {progress}%
+              </span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Completion state */}
+      <AnimatePresence>
+        {isComplete && (
+          <motion.div
+            className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-black/80 to-transparent z-10"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <div className="flex items-center gap-2 text-neon-green text-[10px]">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                </svg>
+              </motion.div>
+              <span className="uppercase tracking-wider font-bold">Analysis Complete</span>
+              <motion.span
+                animate={{ opacity: [0, 1, 0] }}
+                transition={{ duration: 1, repeat: Infinity }}
+                className="text-neon-green"
+              >
+                _
+              </motion.span>
+            </div>
+            <p className="text-[9px] text-muted-foreground mt-2">
+              Rendering results... Please wait
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

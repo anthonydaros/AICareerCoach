@@ -394,6 +394,118 @@ SKILL_RELATIONSHIPS: Dict[str, List[str]] = {
         "troubleshooting", "customer support", "debugging",
         "ticketing systems", "technical support",
     ],
+
+    # =========================================
+    # LOW-CODE & AUTOMATION TOOLS
+    # =========================================
+
+    "n8n": [
+        "webhooks", "apis", "json", "automation workflows", "http requests",
+        "integrations", "triggers", "data transformation", "low-code",
+    ],
+    "make": [
+        "integromat", "scenarios", "modules", "data transformation",
+        "filters", "automation", "webhooks", "api",
+    ],
+    "zapier": [
+        "zaps", "triggers", "actions", "multi-step workflows", "paths",
+        "automation", "integrations",
+    ],
+    "power automate": [
+        "microsoft 365", "azure", "sharepoint", "power platform",
+        "flows", "automation", "microsoft",
+    ],
+    "airtable": [
+        "spreadsheets", "databases", "apis", "views", "automations",
+        "no-code", "formulas",
+    ],
+    "notion": [
+        "databases", "templates", "formulas", "api", "integrations",
+        "documentation", "wiki",
+    ],
+    "retool": [
+        "sql", "react basics", "internal tools", "database queries",
+        "apis", "admin panels",
+    ],
+    "bubble": [
+        "no-code apps", "workflows", "database design", "visual programming",
+    ],
+    "webflow": [
+        "html", "css", "responsive design", "cms", "visual design",
+        "no-code", "web design",
+    ],
+    "appsmith": [
+        "sql", "javascript", "internal tools", "apis", "admin dashboards",
+    ],
+
+    # =========================================
+    # AI & LLM TOOLS (EXPANDED)
+    # =========================================
+
+    "langchain": [
+        "python", "llms", "chains", "agents", "rag", "memory",
+        "prompts", "retrievers", "vector stores", "openai",
+    ],
+    "crewai": [
+        "multi-agent systems", "langchain", "python", "task orchestration",
+        "agents", "llm", "ai agents",
+    ],
+    "openai api": [
+        "rest apis", "prompt engineering", "tokens", "function calling",
+        "embeddings", "gpt", "chat completions", "llm",
+    ],
+    "rag": [
+        "vector databases", "embeddings", "semantic search", "chunking",
+        "retrieval", "langchain", "llamaindex", "llm",
+    ],
+    "prompt engineering": [
+        "llms", "chatgpt", "claude", "chain-of-thought", "few-shot learning",
+        "prompts", "gpt", "ai",
+    ],
+    "hugging face": [
+        "transformers", "pytorch", "model fine-tuning", "datasets",
+        "models", "nlp", "machine learning",
+    ],
+    "pinecone": [
+        "vector database", "embeddings", "similarity search", "rag",
+        "semantic search", "llm",
+    ],
+    "weaviate": [
+        "vector database", "embeddings", "semantic search", "rag",
+        "graphql", "llm",
+    ],
+    "chroma": [
+        "vector database", "embeddings", "local", "rag", "langchain",
+        "llm", "python",
+    ],
+    "faiss": [
+        "vector search", "embeddings", "similarity search", "meta",
+        "rag", "machine learning",
+    ],
+    "ollama": [
+        "local llms", "model deployment", "apis", "quantization",
+        "llama", "mistral", "self-hosted", "llm",
+    ],
+    "llamaindex": [
+        "rag", "data connectors", "indexing", "query engines",
+        "llm", "embeddings", "python",
+    ],
+    "semantic kernel": [
+        ".net", "ai orchestration", "plugins", "memory", "microsoft",
+        "llm", "c#",
+    ],
+    "anthropic api": [
+        "claude", "llm", "prompt engineering", "tokens",
+        "chat completions", "ai",
+    ],
+    "embeddings": [
+        "vector databases", "semantic search", "rag", "similarity",
+        "nlp", "machine learning",
+    ],
+    "fine-tuning": [
+        "model training", "machine learning", "llm", "hugging face",
+        "pytorch", "transfer learning",
+    ],
 }
 
 # Aliases for skills (alternative names for the same skill)
@@ -473,6 +585,30 @@ SKILL_ALIASES: Dict[str, str] = {
     "infosec": "cybersecurity",
     "security": "cybersecurity",
     "site reliability engineer": "sre",
+
+    # Low-code/Automation aliases
+    "integromat": "make",
+    "make.com": "make",
+    "power platform": "power automate",
+    "ms power automate": "power automate",
+    "microsoft power automate": "power automate",
+    "zap": "zapier",
+
+    # AI/LLM aliases
+    "gpt": "openai api",
+    "chatgpt": "openai api",
+    "openai": "openai api",
+    "gpt-4": "openai api",
+    "gpt-3.5": "openai api",
+    "lc": "langchain",
+    "hf": "hugging face",
+    "huggingface": "hugging face",
+    "transformers": "hugging face",
+    "claude": "anthropic api",
+    "claude api": "anthropic api",
+    "vector db": "vector databases",
+    "vectordb": "vector databases",
+    "retrieval augmented generation": "rag",
 }
 
 

@@ -1,12 +1,81 @@
 """ATS Scoring Service - Calculates ATS compatibility scores."""
 
-from dataclasses import dataclass
-from typing import Optional
+import re
+from dataclasses import dataclass, field
+from typing import Optional, Dict, List
 
 from src.domain.entities.resume import Resume
 from src.domain.entities.job_posting import JobPosting
 from src.domain.entities.analysis_result import ATSResult, KeywordAnalysis, KeywordWeight
 from src.domain.services.skill_relationships import expand_skills, normalize_skill
+
+
+# =========================================
+# ROLE TYPE DETECTION KEYWORDS
+# =========================================
+
+ROLE_TYPE_KEYWORDS = {
+    "technical": [
+        "engineer", "developer", "programmer", "backend", "frontend",
+        "fullstack", "full-stack", "devops", "sre", "architect",
+        "engenheiro", "desenvolvedor",
+    ],
+    "design": [
+        "designer", "ux", "ui", "product design", "visual design",
+        "creative", "criativo", "interaction design",
+    ],
+    "data": [
+        "data scientist", "data analyst", "data engineer", "ml engineer",
+        "ai engineer", "machine learning", "analytics", "cientista de dados",
+    ],
+    "product": [
+        "product manager", "product owner", "pm", "scrum master",
+        "gerente de produto", "po",
+    ],
+}
+
+# =========================================
+# WEIGHT CONFIGURATIONS PER ROLE TYPE
+# =========================================
+
+WEIGHTS_BY_ROLE = {
+    "technical": {
+        "skill_match": 40.0,
+        "experience": 30.0,
+        "education": 15.0,
+        "certifications": 10.0,
+        "keywords": 5.0,
+        "portfolio": 0.0,
+        "leadership": 0.0,
+    },
+    "design": {
+        "skill_match": 30.0,
+        "experience": 20.0,
+        "education": 5.0,
+        "certifications": 5.0,
+        "keywords": 5.0,
+        "portfolio": 35.0,  # Portfolio is critical for design roles
+        "leadership": 0.0,
+    },
+    "data": {
+        "skill_match": 35.0,
+        "experience": 30.0,
+        "education": 5.0,
+        "certifications": 15.0,
+        "keywords": 15.0,
+        "portfolio": 0.0,
+        "leadership": 0.0,
+    },
+    "product": {
+        "skill_match": 20.0,
+        "experience": 40.0,
+        "education": 10.0,
+        "certifications": 5.0,
+        "keywords": 10.0,
+        "portfolio": 0.0,
+        "leadership": 15.0,
+    },
+}
 
 
 @dataclass
@@ -17,6 +86,15 @@ class ATSWeights:
     education: float = 15.0         # Education match
     certifications: float = 10.0    # Relevant certifications
     keywords: float = 5.0           # Keyword optimization
+    portfolio: float = 0.0          # Portfolio quality (design roles)
+    leadership: float = 0.0         # Leadership signals (product roles)
+
+    @classmethod
+    def for_role_type(cls, role_type: str) -> "ATSWeights":
+        """Create weights configured for a specific role type."""
+        if role_type in WEIGHTS_BY_ROLE:
+            return cls(**WEIGHTS_BY_ROLE[role_type])
+        return cls()  # Default weights
 
 
 class ATSScorer:
@@ -24,16 +102,66 @@ class ATSScorer:
     ATS Scoring Engine.
 
     Calculates how well a resume matches a job posting
-    using industry-standard ATS criteria:
-    - Skill match (40 points)
-    - Experience (30 points)
-    - Education (15 points)
-    - Certifications (10 points)
-    - Keywords (5 points)
+    using industry-standard ATS criteria with dynamic weights
+    based on role type (Technical, Design, Data, Product):
+    - Skill match (varies by role)
+    - Experience (varies by role)
+    - Education (varies by role)
+    - Certifications (varies by role)
+    - Keywords (varies by role)
+    - Portfolio (design roles only)
+    - Leadership (product roles only)
     """
 
     def __init__(self, weights: Optional[ATSWeights] = None):
         self.weights = weights or ATSWeights()
+
+    def _detect_role_type(self, job: JobPosting) -> str:
+        """Detect role type from job posting to apply appropriate weights."""
+        job_text = f"{job.title or ''} {job.raw_text or ''}".lower()
+
+        for role_type, keywords in ROLE_TYPE_KEYWORDS.items():
+            if any(kw in job_text for kw in keywords):
+                return role_type
+
+        return "technical"  # Default to technical if no match
+
+    def _calculate_portfolio_score(self, resume: Resume) -> float:
+        """Calculate portfolio score for design roles."""
+        text_lower = resume.raw_content.lower()
+        score = 0.0
+
+        # Check for portfolio links
+        if re.search(r"behance\.net/", text_lower):
+            score += 10.0
+        if re.search(r"dribbble\.com/", text_lower):
+            score += 10.0
+        if re.search(r"portfolio|work\s+samples|case\s+stud", text_lower):
+            score += 10.0
+        # Design-specific platforms
+        if re.search(r"figma\.com/", text_lower):
+            score += 5.0
+
+        return min(score, self.weights.portfolio)
+
+    def _calculate_leadership_score(self, resume: Resume) -> float:
+        """Calculate leadership score for product/management roles."""
+        text_lower = resume.raw_content.lower()
+        score = 0.0
+
+        leadership_patterns = [
+            r"led\s+team", r"managed\s+team", r"liderou",
+            r"mentored", r"mentorou", r"coached",
+            r"cross-functional", r"stakeholder",
+            r"roadmap", r"strategy", r"estratégia",
+            r"product\s+launch", r"lançamento",
+        ]
+
+        for pattern in leadership_patterns:
+            if re.search(pattern, text_lower):
+                score += 3.0
+
+        return min(score, self.weights.leadership)
 
     def calculate(self, resume: Resume, job: JobPosting) -> ATSResult:
         """
@@ -46,30 +174,44 @@ class ATSScorer:
         Returns:
             ATSResult with score breakdown
         """
+        # Detect role type and apply appropriate weights
+        role_type = self._detect_role_type(job)
+        self.weights = ATSWeights.for_role_type(role_type)
+
         resume_skills = resume.get_skill_names()
         required_skills = job.get_required_skills()
         all_job_skills = job.get_all_skills()
 
-        # 1. Skill Match Score (40 pts)
+        # 1. Skill Match Score (weight varies by role)
         skill_score, matched_skills, missing_skills = self._calculate_skill_score(
             resume_skills, required_skills, all_job_skills
         )
 
-        # 2. Experience Score (30 pts)
+        # 2. Experience Score (weight varies by role)
         experience_score = self._calculate_experience_score(
             resume.total_experience_years, job.min_experience_years
         )
 
-        # 3. Education Score (15 pts)
+        # 3. Education Score (weight varies by role)
         education_score = self._calculate_education_score(resume, job)
 
-        # 4. Certification Score (10 pts)
+        # 4. Certification Score (weight varies by role)
         certification_score = self._calculate_certification_score(resume)
 
-        # 5. Keyword Score (5 pts)
+        # 5. Keyword Score (weight varies by role)
         keyword_score, matched_kw, missing_kw = self._calculate_keyword_score(
             resume.raw_content, job.keywords
         )
+
+        # 6. Portfolio Score (design roles only)
+        portfolio_score = 0.0
+        if self.weights.portfolio > 0:
+            portfolio_score = self._calculate_portfolio_score(resume)
+
+        # 7. Leadership Score (product roles only)
+        leadership_score = 0.0
+        if self.weights.leadership > 0:
+            leadership_score = self._calculate_leadership_score(resume)
 
         # Calculate total
         total_score = (
@@ -77,7 +219,9 @@ class ATSScorer:
             experience_score +
             education_score +
             certification_score +
-            keyword_score
+            keyword_score +
+            portfolio_score +
+            leadership_score
         )
 
         # Detect format issues
@@ -91,6 +235,18 @@ class ATSScorer:
             experience_gap=max(0, job.min_experience_years - resume.total_experience_years),
             resume=resume,
         )
+
+        # Add role-specific suggestions
+        if role_type == "design" and portfolio_score < self.weights.portfolio * 0.5:
+            suggestions.append(
+                "PORTFOLIO: Add portfolio links (Behance, Dribbble, personal site) - "
+                "critical for design roles"
+            )
+        if role_type == "product" and leadership_score < self.weights.leadership * 0.5:
+            suggestions.append(
+                "LEADERSHIP: Highlight cross-functional collaboration, roadmap ownership, "
+                "and stakeholder management experience"
+            )
 
         # Generate detailed keyword analysis
         keyword_analysis = self._generate_keyword_analysis(
@@ -114,13 +270,20 @@ class ATSScorer:
             total_required=len(required_skills) if required_skills else 0,
         )
 
-        # ATS methodology explanation
+        # Role-specific methodology explanation
+        weight_details = {
+            "technical": "Skills (40%), Experience (30%), Education (15%), Certifications (10%), Keywords (5%)",
+            "design": "Portfolio (35%), Skills (30%), Experience (20%), Certifications (5%), Education (5%), Keywords (5%)",
+            "data": "Skills (35%), Experience (30%), Keywords (15%), Certifications (15%), Education (5%)",
+            "product": "Experience (40%), Skills (20%), Leadership (15%), Education (10%), Keywords (10%), Certifications (5%)",
+        }
+
         methodology = (
-            "ATS (Applicant Tracking System) score measures how well your resume matches "
-            "the job requirements. Modern ATS systems parse resumes for keywords, skills, "
-            "and experience. This analysis uses weighted criteria: Skills (40%), Experience (30%), "
-            "Education (15%), Certifications (10%), Keywords (5%). Critical keywords must appear "
-            "exactly as stated in the job posting. Scores above 80% typically pass initial screening."
+            f"ATS (Applicant Tracking System) score measures how well your resume matches "
+            f"the job requirements. This analysis detected a **{role_type.upper()}** role and uses "
+            f"role-specific weighted criteria: {weight_details.get(role_type, weight_details['technical'])}. "
+            f"Critical keywords must appear exactly as stated in the job posting. "
+            f"Scores above 80% typically pass initial screening."
         )
 
         return ATSResult(

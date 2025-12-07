@@ -83,6 +83,64 @@ When a candidate lists a skill, they likely also have experience with related te
 | ArgoCD | kubernetes, gitops, helm |
 | Prometheus | metrics, alerting, grafana |
 
+### Design & UX
+
+| If They Know | They Likely Know |
+|--------------|------------------|
+| Figma | FigJam, Auto Layout, Components, Variables, Dev Mode, Prototyping |
+| Sketch | Symbols, Libraries, Plugins, Zeplin |
+| Adobe XD | Adobe Creative Cloud, Prototyping, Auto-animate |
+| UX Research | User Interviews, Surveys, Usability Testing, Journey Mapping, Personas |
+| UI Design | Typography, Color Theory, Layout, Grid Systems, Visual Hierarchy, Spacing |
+| Prototyping | Interactions, Animations, User Flows, Click-through Demos, Micro-interactions |
+| Design Systems | Component Libraries, Design Tokens, Style Guides, Documentation, Storybook |
+| Framer | Code-based prototyping, React basics, Animations |
+| InVision | Prototyping, Design Specs, Handoff |
+| Accessibility | WCAG, Screen Readers, Color Contrast, Keyboard Navigation, ARIA |
+
+### Low-code & Automation
+
+| If They Know | They Likely Know |
+|--------------|------------------|
+| n8n | Webhooks, APIs, JSON, Automation workflows, HTTP requests |
+| Make (Integromat) | Scenarios, Modules, Data transformation, Filters |
+| Zapier | Zaps, Triggers, Actions, Multi-step workflows, Paths |
+| Power Automate | Microsoft 365, Azure, SharePoint, Power Platform |
+| Airtable | Spreadsheets, Databases, APIs, Views, Automations |
+| Notion | Databases, Templates, Formulas, API, Integrations |
+| Retool | SQL, React basics, Internal tools, Database queries |
+| Bubble | No-code apps, Workflows, Database design |
+| Webflow | HTML, CSS, Responsive design, CMS |
+| Appsmith | SQL, JavaScript, Internal tools, APIs |
+
+### AI & LLM Tools
+
+| If They Know | They Likely Know |
+|--------------|------------------|
+| LangChain | Python, LLMs, Chains, Agents, RAG, Memory, Prompts |
+| CrewAI | Multi-agent systems, LangChain, Python, Task orchestration |
+| OpenAI API | REST APIs, Prompt Engineering, Tokens, Function calling |
+| RAG | Vector databases, Embeddings, Semantic search, Chunking |
+| Prompt Engineering | LLMs, ChatGPT, Claude, Chain-of-thought, Few-shot learning |
+| Hugging Face | Transformers, PyTorch, Model fine-tuning, Datasets |
+| Vector DBs | Pinecone, Weaviate, Chroma, FAISS, Embeddings, Similarity search |
+| Ollama | Local LLMs, Model deployment, APIs, Quantization |
+| LlamaIndex | RAG, Data connectors, Indexing, Query engines |
+| Semantic Kernel | .NET, AI orchestration, Plugins, Memory |
+
+### Product & Analytics
+
+| If They Know | They Likely Know |
+|--------------|------------------|
+| Amplitude | Event tracking, Funnels, Cohorts, A/B testing |
+| Mixpanel | Event analytics, User segmentation, Retention |
+| Hotjar | Heatmaps, Session recordings, Surveys, Feedback |
+| FullStory | Session replay, Error tracking, Funnels |
+| Google Analytics | Web analytics, UTM tracking, Goals, Events |
+| Segment | Data pipelines, Customer data platform, Integrations |
+| Jira | Agile, Sprints, Backlog, Roadmap |
+| Linear | Issue tracking, Roadmaps, Cycles |
+
 ## Skill Aliases
 
 Common abbreviations and alternate names:
@@ -129,25 +187,37 @@ Common abbreviations and alternate names:
 ## Skill Categories
 
 ### Languages
-python, java, javascript, typescript, go, rust, c++, c, ruby, php, swift, kotlin, scala, r, sql, bash, powershell
+python, java, javascript, typescript, go, rust, c++, c, ruby, php, swift, kotlin, scala, r, sql, bash, powershell, dart, elixir
 
 ### Cloud
-aws, azure, gcp, digitalocean, heroku, vercel, netlify, cloudflare
+aws, azure, gcp, digitalocean, heroku, vercel, netlify, cloudflare, railway, render, fly.io
 
 ### Data
-postgresql, mysql, mongodb, redis, elasticsearch, cassandra, dynamodb, snowflake, bigquery, redshift
+postgresql, mysql, mongodb, redis, elasticsearch, cassandra, dynamodb, snowflake, bigquery, redshift, supabase, planetscale, neon
 
 ### DevOps
-docker, kubernetes, terraform, ansible, jenkins, github actions, gitlab ci, circleci, argocd
+docker, kubernetes, terraform, ansible, jenkins, github actions, gitlab ci, circleci, argocd, pulumi
 
 ### Design
-figma, sketch, adobe xd, invision, photoshop, illustrator, css, tailwind, bootstrap
+figma, figjam, sketch, adobe xd, invision, photoshop, illustrator, framer, principle, zeplin, abstract
+
+### UX Research
+user testing, usability testing, user interviews, surveys, journey mapping, personas, card sorting, heuristic evaluation, a/b testing
+
+### UI Design
+typography, color theory, layout, grid systems, visual hierarchy, spacing, responsive design, mobile-first, accessibility, wcag
 
 ### Product
-jira, confluence, notion, asana, trello, linear, productboard, amplitude, mixpanel
+jira, confluence, notion, asana, trello, linear, productboard, amplitude, mixpanel, hotjar, fullstory, segment
+
+### Low-code
+n8n, make, zapier, airtable, notion, retool, bubble, webflow, appsmith, power automate, power apps
+
+### AI/LLM
+langchain, crewai, llamaindex, openai api, anthropic api, hugging face, transformers, pytorch, tensorflow, rag, vector databases, prompt engineering, fine-tuning, embeddings, ollama, semantic kernel
 
 ### QA
-selenium, cypress, jest, mocha, pytest, junit, postman, k6, locust
+selenium, cypress, jest, mocha, pytest, junit, postman, k6, locust, playwright, vitest
 
 ## Match Calculation Logic
 
@@ -204,3 +274,42 @@ PostgreSQL:
 | Docker | Kubernetes | Medium |
 | REST | GraphQL | Medium |
 | Agile | Scrum, Kanban | High |
+| Figma | Sketch, Adobe XD | High |
+| UI Design | UX Design | Medium |
+| UX Research | Product Management | Medium |
+| LangChain | LlamaIndex, CrewAI | High |
+| Zapier | Make, n8n | High |
+| React | Next.js | High |
+| Node.js | Deno, Bun | Medium |
+| PostgreSQL | MySQL, SQLite | High |
+| MongoDB | DynamoDB, Firebase | Medium |
+| TensorFlow | PyTorch | Medium |
+| OpenAI API | Anthropic API | High |
+| Prompt Engineering | RAG, Fine-tuning | Medium |
+| Vue.js | Nuxt.js | High |
+| Svelte | SvelteKit | High |
+| Tailwind | CSS, Bootstrap | High |
+
+## Design Tool Migrations
+
+Common tool transitions in design careers:
+
+| From | To | Notes |
+|------|-----|-------|
+| Sketch | Figma | Very common, similar concepts |
+| Adobe XD | Figma | Auto Layout = similar to XD stacks |
+| InVision | Figma | Prototyping concepts transfer |
+| Photoshop | Figma | Different paradigm, partial transfer |
+| Illustrator | Figma | Vector concepts transfer |
+
+## AI/ML Tool Evolution
+
+Track modern AI tool relationships:
+
+| Legacy | Modern | Notes |
+|--------|--------|-------|
+| Scikit-learn | AutoML, H2O | Traditional ML → AutoML |
+| TensorFlow 1.x | PyTorch, JAX | Framework shift |
+| Custom NLP | LLMs, GPT APIs | Paradigm shift |
+| Traditional Search | RAG, Vector Search | Semantic approach |
+| Rule-based Automation | AI Agents | Intelligent automation |

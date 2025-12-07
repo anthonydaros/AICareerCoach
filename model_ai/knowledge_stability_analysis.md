@@ -151,6 +151,119 @@ Acceptable When:
 - Traditional markets: Longer tenures expected
 - Remote roles: Variable expectations
 
+## Brazilian Employment Context
+
+### PJ (Pessoa Jurídica) vs CLT
+
+In Brazil, many tech professionals work as PJ (contractors) rather than CLT (traditional employment). This affects stability analysis significantly.
+
+| Contract Type | Typical Tenure | Notes | Scoring Adjustment |
+|---------------|---------------|-------|-------------------|
+| CLT | 2-4 years | Traditional employment, longer expected | Standard scoring |
+| PJ | 6-18 months | Project-based, shorter is normal | Reduce penalties by 50% |
+| Contractor | 3-12 months | Expected to be short-term | Reduce penalties by 70% |
+| Freelancer | Variable | Project-to-project | Consider project count instead |
+
+**Detection Keywords:**
+- "PJ", "Pessoa Jurídica", "Contractor", "Consultor", "Prestador de Serviço"
+- "Freelance", "Freelancer", "Autônomo"
+- "Contrato", "Projeto", "Alocação"
+
+**Important Adjustments:**
+- PJ contracts should NOT be penalized for short tenure (6-12 months)
+- Many senior professionals in Brazil choose PJ for tax benefits
+- Look for "PJ" keyword in job title or company description
+- If tenure < 6 months as PJ: -5 points (not -15)
+- If tenure 6-12 months as PJ: 0 points (not -10)
+
+### Brazilian Market Specifics
+
+| Factor | US Standard | Brazil Adjustment |
+|--------|-------------|-------------------|
+| Average tenure | 2-3 years | 1.5-2.5 years |
+| Job hopping threshold | 3 jobs in 3 years | 4 jobs in 3 years |
+| Short tenure flag | < 12 months | < 6 months (PJ) / < 9 months (CLT) |
+| Employment gap | > 6 months | > 4 months (economy-dependent) |
+
+## Tech Industry Layoffs (2022-2024)
+
+### Context
+Mass layoffs affected the tech industry globally between 2022-2024. This should be considered when analyzing career stability.
+
+**Affected Companies (Partial List):**
+- FAANG/MAANG: Google, Meta, Amazon, Microsoft, Apple (10-20% workforce reductions)
+- Major Tech: Twitter/X, Salesforce, IBM, Intel, Cisco, Dell
+- Startups: Thousands of startups reduced workforce or shut down
+- Brazilian Tech: Many international operations reduced, local startups affected
+
+### Detection Patterns
+- Short tenure (< 12 months) ending in 2022, 2023, or early 2024
+- Company name matches known layoff list
+- Multiple roles ending in similar timeframe
+- Explicit mention of "layoff", "restructuring", "downsizing", "RIF"
+
+### Scoring Adjustments
+
+```
+If role ended 2022-2024:
+  - At known layoff company: reduce penalty by 50%
+  - With explicit layoff mention: no penalty
+  - With "restructuring" mention: reduce penalty by 30%
+  - During startup shutdown: no penalty
+```
+
+**Keywords to Detect:**
+- "layoff", "laid off", "downsized", "restructured"
+- "company shutdown", "startup closed", "acquisition"
+- "position eliminated", "role eliminated", "team dissolved"
+- "RIF" (Reduction in Force)
+
+## Startup-Specific Adjustments
+
+### Tenure Expectations by Stage
+
+| Startup Stage | Expected Tenure | Risk Level | Scoring Adjustment |
+|---------------|-----------------|------------|-------------------|
+| Pre-seed/Seed | 6-12 months | High failure rate | Reduce penalty by 70% |
+| Series A | 1-2 years | Still volatile | Reduce penalty by 50% |
+| Series B | 2-3 years | More stable | Reduce penalty by 25% |
+| Series C+ | 2-3 years | Stable | Standard scoring |
+| Post-IPO | 3+ years | Similar to enterprise | Standard scoring |
+
+### Detection Methods
+- Company founding year (recent = early stage)
+- Team size mentions (< 50 employees = likely early stage)
+- Funding stage mentions in job description
+- Company still exists check (if closed = startup failure)
+
+### Startup Failure Signals
+```
+Pattern: Short tenure + company no longer exists
+
+Mitigating Factors:
+- Startup shutdowns are common (90% failure rate)
+- Not a reflection of individual performance
+- Shows risk tolerance and entrepreneurial spirit
+
+Scoring: No penalty if startup demonstrably failed
+```
+
+## Remote Work Considerations (Post-2020)
+
+### Impact on Stability Analysis
+
+| Scenario | Traditional View | Modern Adjustment |
+|----------|-----------------|-------------------|
+| Multiple short remote gigs | Red flag | Acceptable if project-based |
+| Gap during COVID (2020-2021) | Flag | No penalty |
+| Company went remote-first | Potential concern | Not a concern |
+| Relocation-based change | Flag | Common, reduce penalty |
+
+### Detection
+- "Remote", "Distributed", "WFH" in job description
+- Location changes without job changes
+- "Contractor" or "Freelance" for remote positions
+
 ## Analysis Output Format
 
 ```markdown

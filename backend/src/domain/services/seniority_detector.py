@@ -106,6 +106,14 @@ SENIOR_SKILLS = {
     # Advanced practices
     "performance optimization", "scalability", "high availability",
     "disaster recovery", "security architecture",
+    # Design - Senior level
+    "design systems", "design leadership", "ux strategy",
+    "design operations", "design ops", "figma components", "design tokens",
+    "accessibility audit", "wcag compliance", "design mentoring",
+    "design system architecture", "component library",
+    # AI/LLM Senior skills
+    "langchain", "rag", "prompt engineering", "llm architecture",
+    "vector databases", "embeddings", "fine-tuning",
 }
 
 MID_SKILLS = {
@@ -124,6 +132,13 @@ MID_SKILLS = {
     "aws", "gcp", "azure", "docker", "kubernetes",
     # Code quality
     "code review", "pull request", "clean code",
+    # Design - Mid level
+    "figma", "user research", "prototyping", "wireframing",
+    "usability testing", "design thinking", "information architecture",
+    "responsive design", "mobile-first", "interaction design",
+    "a/b testing", "user flows", "personas",
+    # AI/LLM Mid skills
+    "openai api", "chatgpt integration", "llm prompts",
 }
 
 JUNIOR_SKILLS = {
@@ -135,20 +150,37 @@ JUNIOR_SKILLS = {
 # Title patterns that indicate seniority
 SENIOR_TITLES = [
     r"\b(senior|sr\.?|sênior|pleno\s*iii|lead|principal|staff|architect)\b",
-    r"\b(tech\s*lead|technical\s*lead|team\s*lead)\b",
+    r"\b(tech\s*lead|technical\s*lead|team\s*lead|líder\s*técnico)\b",
     r"\b(head\s+of|diretor|director|gerente|manager)\b",
     r"\b(specialist|especialista)\b",
+    # Brazilian senior titles
+    r"\b(especialista\s+sênior|especialista\s+sr)\b",
+    r"\b(arquiteto\s+de\s+solu[çc][õo]es|solutions\s+architect)\b",
+    r"\b(coordenador|coordinator)\b",
+    r"\b(engenheiro\s+sênior|desenvolvedor\s+sênior)\b",
+    # Design senior titles
+    r"\b(senior\s+designer|design\s+lead|lead\s+designer|head\s+of\s+design)\b",
+    r"\b(ux\s+lead|ui\s+lead|product\s+design\s+lead)\b",
+    r"\b(design\s+director|diretor\s+de\s+design|diretor\s+criativo)\b",
 ]
 
 MID_TITLES = [
     r"\b(pleno|mid|middle|intermediate|ii)\b",
     r"\b(developer|engineer|analyst)\s+(ii|2|pleno)\b",
+    # Brazilian mid-level titles
+    r"\b(desenvolvedor\s+pleno|analista\s+pleno|engenheiro\s+pleno)\b",
+    r"\b(designer\s+pleno|ux\s+designer\s+pleno|product\s+designer\s+pleno)\b",
+    # Design mid-level titles
+    r"\b(product\s+designer|ux\s+designer|ui\s+designer)\b",
 ]
 
 JUNIOR_TITLES = [
     r"\b(junior|jr\.?|júnior|trainee|estagi[áa]rio|intern)\b",
     r"\b(entry\s*level|entry-level)\b",
     r"\b(developer|engineer|analyst)\s+(i|1|junior)\b",
+    # Brazilian junior titles
+    r"\b(desenvolvedor\s+j[úu]nior|analista\s+j[úu]nior|designer\s+j[úu]nior)\b",
+    r"\b(assistente|assistant)\b",
 ]
 
 
